@@ -67,6 +67,7 @@ El contexto de industria es inyectable: hoy restaurante, mañana hotel, fábrica
 ## 📚 Notas relacionadas
 
 ### Estrategia
+- [[Palancas de Ventas - Restaurantes]] — Las 7 palancas reales detrás de "más ventas"
 - [[Vision - Empresa A vs Empresa B]] — Por qué construir A pensando en B
 - [[GrowthSuite - 3 Pilares Reconstruidos]] — Los pilares reales, sin humo
 - [[Vision Bot - De Rigido a Agente Util]] — La verdad sobre IA hoy + roadmap enterprise + cadenas
@@ -74,6 +75,7 @@ El contexto de industria es inyectable: hoy restaurante, mañana hotel, fábrica
 - [[Disruption - Market Equilibrium]] — La disruption no es tecnología
 
 ### Producto
+- [[Cerebro del Restaurante - Daily Briefing]] — El sistema que cada día dice qué hacer y por qué
 - [[Agentes GrowthSuite - Vision Completa]] — Los 6 agentes y sus roles
 - [[Caso Relay - Agentes de Marketing]] — 40 agentes por $500/mes
 
