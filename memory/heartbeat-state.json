@@ -1,0 +1,14 @@
+{
+  "lastChecks": {
+    "whatsapp": 1745721947,
+    "pos_backends": 1745721960,
+    "pos_database": 1745721960,
+    "pos_frontends": null
+  },
+  "lastStatus": {
+    "whatsapp": "⚠️ Command not available",
+    "pos_backends": "✅ All 9 services healthy (200)",
+    "pos_database": "✅ Connected - 81 orders last 24h",
+    "pos_frontends": "⏳ Due for check"
+  }
+}

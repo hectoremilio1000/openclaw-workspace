@@ -1,0 +1,72 @@
+.DS_Store
+.env
+**/.env
+!.env.example
+!**/.env.example
+.vercel
+
+# Local sync tooling and private operational data (do not commit by default)
+cloud_sync.py
+cloud_sync_fast.py
+cloud_sync_v2.py
+cloud_sync_v3.py
+db_sync_full.py
+db_sync_v2.py
+db_sync_v3.py
+fix_all.py
+fix_remaining.py
+investigate_movtos.py
+investigate_sr.py
+investigate_sr2.py
+investigate_sr3.py
+migrate_llorona_inventory.py
+mirror_to_llorona2.py
+sync_llorona.py
+sync_llorona_demo2.py
+sync_llorona.py.bak
+mirror_llorona2_state.json
+sync_llorona_state.json
+sync_llorona_demo2_state.json
+
+# Local datasets and large files
+llorona_data/
+video_compras.mp4
+video_inventario.mp4
+video_ventas.mp4
+softrestaurant-sync.skill
+
+# Temporary screenshots (keep skill-generated ones out)
+auto-screenshot*.png
+auto-screenshot*.jpg
+temp-screenshot*.png
+temp-*.png
+temp-*.jpeg
+tmp/
+
+# Node
+node_modules/
+package-lock.json
+
+# Build artifacts
+build/
+dist/
+
+# OS
+.obsidian/
+.obsidianignore
+
+# Bot simulator cache (large)
+pos_bot_simulator/.npm-cache/
+pos_bot_simulator/node_modules/
+
+# Whatsapp demo node_modules
+pos_whatsapp_demo/node_modules/
+
+# Front apps (cloned separately)
+pos_admin_front/node_modules/
+pos_cash_front/node_modules/
+pos_centro_front/node_modules/
+pos_comandero_front/node_modules/
+pos_monitor_front/node_modules/
+pos_website_template/node_modules/
+front_pos_facturas/node_modules/
