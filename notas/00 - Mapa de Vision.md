@@ -76,6 +76,7 @@ El contexto de industria es inyectable: hoy restaurante, mañana hotel, fábrica
 
 ### Producto
 - [[Cerebro del Restaurante - Daily Briefing]] — El sistema que cada día dice qué hacer y por qué
+- [[Cerebro Tecnico - LLM vs Deep Learning vs Hibrido]] — Cómo se construye en la práctica
 - [[Agentes GrowthSuite - Vision Completa]] — Los 6 agentes y sus roles
 - [[Caso Relay - Agentes de Marketing]] — 40 agentes por $500/mes
 

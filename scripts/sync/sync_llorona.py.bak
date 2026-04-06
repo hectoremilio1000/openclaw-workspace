@@ -1,0 +1,687 @@
+#!/usr/bin/env python3
+"""
+Sync SoftRestaurant (SQL Server on aidee/Tailscale) → GrowthSuite POS (PostgreSQL local)
+Restaurant: Cantina La Llorona (GrowthSuite restaurant_id=5)
+
+Usage:
+  python3 sync_llorona.py --full      # Initial full migration
+  python3 sync_llorona.py --sync      # Incremental daily sync
+  python3 sync_llorona.py --status    # Show sync status
+"""
+
+import argparse
+import json
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+import psycopg2
+import psycopg2.extras
+import winrm
+
+# ── Config ──────────────────────────────────────────────────────────────
+SR_HOST = '100.83.103.9'
+SR_USER = 'aidee\\luz maria'
+SR_PASS = '1234'
+SR_INSTANCE = 'localhost\\NATIONALSOFT'
+SR_DB = 'softrestaurant11'
+
+PG_HOST = '127.0.0.1'
+PG_PORT = 5432
+PG_USER = 'pos_user'
+PG_PASS = 'pos_pass'
+PG_DB = 'pos_app'
+
+RESTAURANT_ID = 5  # La Llorona in GrowthSuite
+
+STATE_FILE = Path(__file__).parent / 'sync_llorona_state.json'
+
+# ── Helpers ─────────────────────────────────────────────────────────────
+
+def get_sr_session():
+    return winrm.Session(SR_HOST, auth=(SR_USER, SR_PASS), transport='ntlm')
+
+def sr_query_rows(session, sql, columns, db=SR_DB):
+    """Execute SQL via PowerShell+sqlcmd and return list of dicts."""
+    # Use PowerShell to safely pass the query string
+    ps_sql = sql.replace('"', '`"')
+    ps_script = f'$q = "{ps_sql}"\nsqlcmd -S "localhost\\NATIONALSOFT" -E -d {db} -Q $q -s"|" -W -h -1'
+    r = session.run_ps(ps_script)
+    out = r.std_out.decode('latin-1', errors='replace').strip()
+    if not out:
+        return []
+    
+    results = []
+    for line in out.split('\n'):
+        line = line.strip()
+        if not line or 'rows affected' in line.lower() or line.startswith('('):
+            continue
+        vals = [v.strip() if v.strip() != 'NULL' else None for v in line.split('|')]
+        if len(vals) >= len(columns):
+            results.append(dict(zip(columns, vals[:len(columns)])))
+    return results
+
+def sr_scalar(session, sql, db=SR_DB):
+    """Get single scalar value."""
+    rows = sr_query_rows(session, sql, ['val'], db)
+    if rows:
+        return rows[0]['val']
+    return None
+
+def get_pg():
+    return psycopg2.connect(host=PG_HOST, port=PG_PORT, user=PG_USER, password=PG_PASS, dbname=PG_DB)
+
+def load_state():
+    if STATE_FILE.exists():
+        return json.loads(STATE_FILE.read_text())
+    return {}
+
+def save_state(state):
+    STATE_FILE.write_text(json.dumps(state, indent=2, default=str))
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+# ── Migration Functions ─────────────────────────────────────────────────
+
+def migrate_payment_methods(pg):
+    cur = pg.cursor()
+    methods = [
+        ('EF', 'Efectivo', True), ('VISA', 'Visa', False), ('MC', 'Mastercard', False),
+        ('AMEX', 'American Express', False), ('08', 'Transferencia', False),
+        ('CR', 'Crédito', False), ('DLL', 'Dólares', True), ('VAL', 'Vales', False),
+    ]
+    for code, name, is_cash in methods:
+        cur.execute("""
+            INSERT INTO payment_methods (code, name, is_cash, enabled)
+            VALUES (%s, %s, %s, true)
+            ON CONFLICT (code) DO UPDATE SET name=EXCLUDED.name, is_cash=EXCLUDED.is_cash
+        """, (code, name, is_cash))
+    pg.commit()
+    cur.execute("SELECT id, code FROM payment_methods")
+    return {r[1]: r[0] for r in cur.fetchall()}
+
+def migrate_areas(sr, pg):
+    rows = sr_query_rows(sr, "SELECT idarearestaurant, descripcion FROM areasrestaurant WHERE Estatus=1", ['idarearestaurant', 'descripcion'])
+    cur = pg.cursor()
+    area_map = {}
+    for i, r in enumerate(rows):
+        sr_id = str(r.get('idarearestaurant', '')).strip()
+        name = str(r.get('descripcion', 'SIN NOMBRE')).strip()
+        cur.execute("""
+            INSERT INTO areas (restaurant_id, name, sort_order)
+            VALUES (%s, %s, %s) ON CONFLICT DO NOTHING RETURNING id
+        """, (RESTAURANT_ID, name, i+1))
+        result = cur.fetchone()
+        if not result:
+            cur.execute("SELECT id FROM areas WHERE restaurant_id=%s AND name=%s", (RESTAURANT_ID, name))
+            result = cur.fetchone()
+        if result:
+            area_map[sr_id] = result[0]
+    pg.commit()
+    print(f"  Areas: {len(area_map)}")
+    return area_map
+
+def migrate_tables(sr, pg, area_map):
+    rows = sr_query_rows(sr, "SELECT idmesa, idarearestaurant, personas FROM mesas ORDER BY idmesa", ['idmesa', 'idarearestaurant', 'personas'])
+    cur = pg.cursor()
+    table_map = {}
+    default_area = list(area_map.values())[0] if area_map else None
+    for r in rows:
+        sr_id = str(r.get('idmesa', '')).strip()
+        gs_area = area_map.get(str(r.get('idarearestaurant', '')).strip(), default_area)
+        seats = int(r.get('personas', 4) or 4)
+        cur.execute("""
+            INSERT INTO tables (restaurant_id, area_id, code, seats, status)
+            VALUES (%s, %s, %s, %s, 'free') ON CONFLICT DO NOTHING RETURNING id
+        """, (RESTAURANT_ID, gs_area, sr_id, seats))
+        result = cur.fetchone()
+        if not result:
+            cur.execute("SELECT id FROM tables WHERE restaurant_id=%s AND code=%s", (RESTAURANT_ID, sr_id))
+            result = cur.fetchone()
+        if result:
+            table_map[sr_id] = result[0]
+    pg.commit()
+    print(f"  Tables: {len(table_map)}")
+    return table_map
+
+def migrate_groups(sr, pg):
+    rows = sr_query_rows(sr, "SELECT idgrupo, descripcion FROM grupos ORDER BY idgrupo", ['idgrupo', 'descripcion'])
+    cur = pg.cursor()
+    cur.execute("SELECT id FROM product_categories WHERE restaurant_id=%s LIMIT 1", (RESTAURANT_ID,))
+    cat = cur.fetchone()
+    if not cat:
+        cur.execute("INSERT INTO product_categories (restaurant_id, code, name, sort_order, is_enabled) VALUES (%s, 'GEN', 'General', 1, true) RETURNING id", (RESTAURANT_ID,))
+        cat_id = cur.fetchone()[0]
+    else:
+        cat_id = cat[0]
+    
+    group_map = {}
+    for i, r in enumerate(rows):
+        sr_id = str(r.get('idgrupo', '')).strip()
+        name = str(r.get('descripcion', 'VACIO')).strip()
+        if not name or name == 'VACIO':
+            name = f"SIN GRUPO {sr_id}"
+        code = f"G{sr_id}"
+        cur.execute("""
+            INSERT INTO product_groups (restaurant_id, category_id, code, name, sort_order, is_enabled)
+            VALUES (%s, %s, %s, %s, %s, true) ON CONFLICT DO NOTHING RETURNING id
+        """, (RESTAURANT_ID, cat_id, code, name, i+1))
+        result = cur.fetchone()
+        if not result:
+            cur.execute("SELECT id FROM product_groups WHERE restaurant_id=%s AND code=%s", (RESTAURANT_ID, code))
+            result = cur.fetchone()
+        if result:
+            group_map[sr_id] = result[0]
+    pg.commit()
+    print(f"  Groups: {len(group_map)}")
+    return group_map
+
+def migrate_products(sr, pg, group_map):
+    rows = sr_query_rows(sr, 
+        "SELECT p.idproducto, p.descripcion, p.idgrupo, COALESCE(pd.precio, 0) as precio, COALESCE(pd.impuesto1, 16) as impuesto, COALESCE(pd.preciosinimpuestos, 0) as preciosin FROM productos p LEFT JOIN productosdetalle pd ON p.idproducto=pd.idproducto ORDER BY p.idproducto",
+        ['idproducto', 'descripcion', 'idgrupo', 'precio', 'impuesto', 'preciosin'])
+    
+    cur = pg.cursor()
+    prod_map = {}
+    default_group = list(group_map.values())[0] if group_map else None
+    
+    for r in rows:
+        sr_id = str(r.get('idproducto', '')).strip()
+        gs_group = group_map.get(str(r.get('idgrupo', '')).strip(), default_group)
+        price = float(r.get('precio', 0) or 0)
+        tax = float(r.get('impuesto', 16) or 16)
+        base = float(r.get('preciosin', 0) or 0)
+        name = str(r.get('descripcion', 'SIN NOMBRE')).strip()
+        # Handle pipe in product names (would break parsing)
+        if '|' in name:
+            name = name.replace('|', '-')
+        
+        cur.execute("""
+            INSERT INTO products (restaurant_id, code, name, base_price, price_gross, tax_rate, group_id, is_enabled)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, true)
+            ON CONFLICT DO NOTHING RETURNING id
+        """, (RESTAURANT_ID, sr_id, name, base, price, tax, gs_group))
+        result = cur.fetchone()
+        if not result:
+            cur.execute("SELECT id FROM products WHERE restaurant_id=%s AND code=%s", (RESTAURANT_ID, sr_id))
+            result = cur.fetchone()
+        if result:
+            prod_map[sr_id] = result[0]
+    pg.commit()
+    print(f"  Products: {len(prod_map)}")
+    return prod_map
+
+def migrate_users(sr, pg):
+    rows = sr_query_rows(sr, "SELECT idmesero, nombre, tipo, visible FROM meseros ORDER BY idmesero", ['idmesero', 'nombre', 'tipo', 'visible'])
+    cur = pg.cursor()
+    
+    cur.execute("SELECT id FROM roles WHERE code='waiter'")
+    waiter_role = cur.fetchone()[0]
+    cur.execute("SELECT id FROM roles WHERE code='cashier'")
+    cashier_role = cur.fetchone()[0]
+    
+    user_map = {}
+    for r in rows:
+        sr_id = str(r.get('idmesero', '')).strip()
+        name = str(r.get('nombre', 'SIN NOMBRE')).strip()
+        email = f"sr{sr_id}@llorona.pos"
+        tipo = int(r.get('tipo', 1) or 1)
+        rid = cashier_role if tipo == 2 else waiter_role
+        status = 'active' if str(r.get('visible', '1')) == '1' else 'inactive'
+        
+        cur.execute("""
+            INSERT INTO users (restaurant_id, full_name, email, password_hash, role_id, status, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            ON CONFLICT (email) DO UPDATE SET full_name=EXCLUDED.full_name, status=EXCLUDED.status
+            RETURNING id
+        """, (RESTAURANT_ID, name, email, 'sr_migrated', rid, status))
+        user_map[sr_id] = cur.fetchone()[0]
+    pg.commit()
+    print(f"  Users: {len(user_map)}")
+    return user_map
+
+def migrate_cash_station(pg):
+    cur = pg.cursor()
+    cur.execute("""
+        INSERT INTO cash_stations (restaurant_id, code, name, is_enabled)
+        VALUES (%s, 'CAJA-LL', 'Caja La Llorona', true)
+        ON CONFLICT DO NOTHING RETURNING id
+    """, (RESTAURANT_ID,))
+    result = cur.fetchone()
+    if not result:
+        cur.execute("SELECT id FROM cash_stations WHERE restaurant_id=%s LIMIT 1", (RESTAURANT_ID,))
+        result = cur.fetchone()
+    pg.commit()
+    return result[0]
+
+def migrate_shifts(sr, pg, user_map, station_id, min_turno=0):
+    rows = sr_query_rows(sr, f"SELECT idturno, fondo, apertura, cierre, cajero, efectivo, tarjeta, vales, credito FROM turnos WHERE idturno > {min_turno} ORDER BY idturno", ['idturno', 'fondo', 'apertura', 'cierre', 'cajero', 'efectivo', 'tarjeta', 'vales', 'credito'])
+    
+    cur = pg.cursor()
+    cur.execute("SELECT id, full_name FROM users WHERE restaurant_id=%s", (RESTAURANT_ID,))
+    user_by_name = {r[1].upper(): r[0] for r in cur.fetchall()}
+    
+    shift_map = {}
+    for r in rows:
+        sr_id = str(r.get('idturno', '')).strip()
+        apertura = r.get('apertura')
+        cierre = r.get('cierre')
+        # Handle .NET datetime format from ConvertTo-Json: /Date(1234567890000)/
+        if isinstance(apertura, str) and '/Date(' in apertura:
+            import re
+            ms = int(re.search(r'/Date\((-?\d+)', apertura).group(1))
+            apertura = datetime.fromtimestamp(ms / 1000, tz=timezone.utc).isoformat()
+        if isinstance(cierre, str) and '/Date(' in cierre:
+            import re
+            ms = int(re.search(r'/Date\((-?\d+)', cierre).group(1))
+            cierre = datetime.fromtimestamp(ms / 1000, tz=timezone.utc).isoformat()
+        elif cierre is None or cierre == '' or cierre == 'None':
+            cierre = None
+        
+        cajero_name = str(r.get('cajero', '')).strip().upper()
+        user_id = user_by_name.get(cajero_name)
+        status = 'CLOSED' if cierre else 'OPEN'
+        
+        efectivo = float(r.get('efectivo', 0) or 0)
+        tarjeta = float(r.get('tarjeta', 0) or 0)
+        vales = float(r.get('vales', 0) or 0)
+        credito = float(r.get('credito', 0) or 0)
+        sales = efectivo + tarjeta + vales + credito
+        
+        cur.execute("""
+            INSERT INTO shifts (restaurant_id, master_station_id, user_id, opened_at, closed_at, status,
+                               sales_count, sales_amount, tips_amount, refunds_amount, net_sales_amount)
+            VALUES (%s, %s, %s, %s, %s, %s, 0, %s, 0, 0, %s)
+            ON CONFLICT DO NOTHING RETURNING id
+        """, (RESTAURANT_ID, station_id, user_id, apertura, cierre, status, sales, sales))
+        result = cur.fetchone()
+        if result:
+            shift_map[sr_id] = result[0]
+        else:
+            cur.execute("SELECT id FROM shifts WHERE restaurant_id=%s AND opened_at=%s", (RESTAURANT_ID, apertura))
+            row = cur.fetchone()
+            if row:
+                shift_map[sr_id] = row[0]
+    pg.commit()
+    print(f"  Shifts: {len(shift_map)}")
+    return shift_map
+
+def migrate_orders_batch(sr, pg, prod_map, user_map, table_map, area_map, shift_map, pm_map, station_id, folio_from, folio_to):
+    """Migrate a range of cheques."""
+    
+    # Fetch cheques
+    cheques = sr_query_rows(sr, f"SELECT folio, numcheque, fecha, mesa, nopersonas, idmesero, pagado, cancelado, idarearestaurant, idturno, descuento, orden FROM cheques WHERE folio >= {folio_from} AND folio <= {folio_to} ORDER BY folio", ['folio', 'numcheque', 'fecha', 'mesa', 'nopersonas', 'idmesero', 'pagado', 'cancelado', 'idarearestaurant', 'idturno', 'descuento', 'orden'])
+    if not cheques:
+        return 0
+    
+    # Fetch cheqdet
+    det_rows = sr_query_rows(sr, f"SELECT foliodet, movimiento, cantidad, idproducto, descuento, precio, impuesto1, preciosinimpuestos, modificador, mitad, comentario FROM cheqdet WHERE foliodet >= {folio_from} AND foliodet <= {folio_to} ORDER BY foliodet, movimiento", ['foliodet', 'movimiento', 'cantidad', 'idproducto', 'descuento', 'precio', 'impuesto1', 'preciosinimpuestos', 'modificador', 'mitad', 'comentario'])
+    det_by_folio = {}
+    for d in det_rows:
+        f = str(d.get('foliodet', '')).strip()
+        det_by_folio.setdefault(f, []).append(d)
+    
+    # Fetch payments
+    pay_rows = sr_query_rows(sr, f"SELECT folio, idformadepago, importe, propina FROM chequespagos WHERE folio >= {folio_from} AND folio <= {folio_to} ORDER BY folio", ['folio', 'idformadepago', 'importe', 'propina'])
+    pay_by_folio = {}
+    for p in pay_rows:
+        f = str(p.get('folio', '')).strip()
+        pay_by_folio.setdefault(f, []).append(p)
+    
+    cur = pg.cursor()
+    created = 0
+    
+    for ch in cheques:
+        folio = str(ch.get('folio', '')).strip()
+        folio_int = int(folio)
+        
+        # Idempotency check
+        cur.execute("SELECT id FROM orders WHERE restaurant_id=%s AND folio_series='SR' AND folio_number=%s", (RESTAURANT_ID, folio_int))
+        if cur.fetchone():
+            continue
+        
+        mesero_sr = str(ch.get('idmesero', '')).strip()
+        mesero_id = user_map.get(mesero_sr)
+        mesa = str(ch.get('mesa', '')).strip()
+        table_id = table_map.get(mesa)
+        area_sr = str(ch.get('idarearestaurant', '')).strip()
+        area_id = area_map.get(area_sr)
+        turno_sr = str(ch.get('idturno', '')).strip()
+        shift_id = shift_map.get(turno_sr)
+        
+        cancelado = str(ch.get('cancelado', '0')) == '1'
+        personas = int(ch.get('nopersonas', 1) or 1)
+        
+        # Parse date
+        fecha = ch.get('fecha')
+        if isinstance(fecha, str) and '/Date(' in fecha:
+            import re
+            ms = int(re.search(r'/Date\((-?\d+)', fecha).group(1))
+            fecha = datetime.fromtimestamp(ms / 1000, tz=timezone.utc).isoformat()
+        
+        items = det_by_folio.get(folio, [])
+        subtotal = 0
+        tax_total = 0
+        total = 0
+        for i in items:
+            qty = float(i.get('cantidad', 1) or 1)
+            precio = float(i.get('precio', 0) or 0)
+            base = float(i.get('preciosinimpuestos', precio) or precio)
+            subtotal += base * qty
+            tax_total += (precio - base) * qty
+            total += precio * qty
+        
+        payments = pay_by_folio.get(folio, [])
+        tip = sum(float(p.get('propina', 0) or 0) for p in payments)
+        
+        status = 'void' if cancelado else ('closed' if str(ch.get('pagado', '0')) == '1' else 'open')
+        
+        cur.execute("""
+            INSERT INTO orders (restaurant_id, cash_station_id, shift_id, table_id, waiter_id,
+                               status, opened_at, closed_at, subtotal, tax, total, tip, persons,
+                               area_id, folio_series, folio_number, print_count, reopen_count,
+                               "tableName", service_id, tip_collected_total, tip_paid_total,
+                               is_courtesy, discount_amount)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'SR', %s,
+                    0, 0, %s, 1, 0, 0, false, 0)
+            RETURNING id
+        """, (RESTAURANT_ID, station_id, shift_id, table_id, mesero_id,
+              status, fecha, fecha if status != 'open' else None,
+              round(subtotal, 2), round(tax_total, 2), round(total, 2), round(tip, 2),
+              personas, area_id, folio_int, mesa))
+        order_id = cur.fetchone()[0]
+        
+        # Items
+        for item in items:
+            prod_sr = str(item.get('idproducto', '')).strip()
+            prod_id = prod_map.get(prod_sr)
+            qty = float(item.get('cantidad', 1) or 1)
+            precio = float(item.get('precio', 0) or 0)
+            base = float(item.get('preciosinimpuestos', precio) or precio)
+            desc = float(item.get('descuento', 0) or 0)
+            is_mod = bool(item.get('modificador') and str(item.get('modificador', '0')) != '0')
+            half = int(item.get('mitad', 0) or 0)
+            tax_rate = float(item.get('impuesto1', 16) or 16)
+            comment = item.get('comentario')
+            if comment:
+                comment = str(comment).strip()
+                if not comment or comment == 'None':
+                    comment = None
+            
+            cur.execute("""
+                INSERT INTO order_items (order_id, product_id, qty, unit_price, total, notes,
+                                        discount_amount, status, "isModifier", "isCompositeProductMain",
+                                        half, tax_rate, base_price, is_courtesy)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, false, %s, %s, %s, false)
+            """, (order_id, prod_id, qty, precio, round(qty * precio, 2),
+                  comment, desc, 'cancelled' if cancelado else 'prepared',
+                  is_mod, half, tax_rate, base))
+        
+        # Payments
+        for pay in payments:
+            forma = str(pay.get('idformadepago', '')).strip()
+            pm_id = pm_map.get(forma)
+            if not pm_id:
+                cur.execute("INSERT INTO payment_methods (code, name, is_cash, enabled) VALUES (%s, %s, false, true) ON CONFLICT (code) DO NOTHING RETURNING id", (forma, forma))
+                r = cur.fetchone()
+                if not r:
+                    cur.execute("SELECT id FROM payment_methods WHERE code=%s", (forma,))
+                    r = cur.fetchone()
+                pm_id = r[0]
+                pm_map[forma] = pm_id
+            
+            amount = float(pay.get('importe', 0) or 0)
+            propina = float(pay.get('propina', 0) or 0)
+            cur.execute("""
+                INSERT INTO payments (order_id, payment_method_id, amount, currency, status,
+                                     paid_at, shift_id, cash_station_id, cashier_id, kind)
+                VALUES (%s, %s, %s, 'MXN', 'settled', %s, %s, %s, %s, 'SALE')
+            """, (order_id, pm_id, amount + propina, fecha, shift_id or 1, station_id, mesero_id or 1))
+        
+        created += 1
+    
+    pg.commit()
+    return created
+
+def migrate_suppliers(sr, pg):
+    rows = sr_query_rows(sr, "SELECT idproveedor, nombre, razonsocial, telefono, email FROM proveedores", ['idproveedor', 'nombre', 'razonsocial', 'telefono', 'email'])
+    cur = pg.cursor()
+    sup_map = {}
+    for r in rows:
+        code = str(r.get('idproveedor', '')).strip()
+        name = str(r.get('nombre', 'SIN NOMBRE')).strip()
+        phone = r.get('telefono')
+        email = r.get('email')
+        if phone: phone = str(phone).strip()
+        if email: email = str(email).strip()
+        
+        cur.execute("""
+            INSERT INTO suppliers (restaurant_id, code, name, phone, email, is_active)
+            VALUES (%s, %s, %s, %s, %s, true)
+            ON CONFLICT DO NOTHING RETURNING id
+        """, (RESTAURANT_ID, code, name, phone, email))
+        result = cur.fetchone()
+        if not result:
+            cur.execute("SELECT id FROM suppliers WHERE restaurant_id=%s AND code=%s", (RESTAURANT_ID, code))
+            result = cur.fetchone()
+        if result:
+            sup_map[code] = result[0]
+    pg.commit()
+    print(f"  Suppliers: {len(sup_map)}")
+    return sup_map
+
+def migrate_inventory(sr, pg):
+    rows = sr_query_rows(sr, "SELECT i.idinsumo, i.descripcion, i.unidad FROM insumos i", ['idinsumo', 'descripcion', 'unidad'])
+    cur = pg.cursor()
+    cur.execute("SELECT id, code FROM measurement_units")
+    units = {r[1]: r[0] for r in cur.fetchall()}
+    
+    unit_mapping = {'LTS': 'L', 'KGS': 'KG', 'PZS': 'PZA', 'MLS': 'ML'}
+    
+    for r in rows:
+        code = str(r.get('idinsumo', '')).strip()
+        name = str(r.get('descripcion', 'SIN NOMBRE')).strip()
+        unit_code = str(r.get('unidad', 'PZA')).strip().upper()
+        gs_unit = unit_mapping.get(unit_code, unit_code)
+        unit_id = units.get(gs_unit, units.get('PZA', 1))
+        
+        cur.execute("""
+            INSERT INTO inventory_items (restaurant_id, code, name, unit_id, is_active)
+            VALUES (%s, %s, %s, %s, true) ON CONFLICT DO NOTHING
+        """, (RESTAURANT_ID, code, name, unit_id))
+    pg.commit()
+    print(f"  Inventory items: {len(rows)}")
+
+# ── Main ────────────────────────────────────────────────────────────────
+
+def full_migration():
+    print(f"\n{'='*60}")
+    print(f"FULL MIGRATION: SoftRestaurant → GrowthSuite")
+    print(f"Restaurant: La Llorona (id={RESTAURANT_ID})")
+    print(f"Started: {now_iso()}")
+    print(f"{'='*60}\n")
+    
+    sr = get_sr_session()
+    pg = get_pg()
+    
+    try:
+        print("[1/10] Payment methods...")
+        pm_map = migrate_payment_methods(pg)
+        
+        print("[2/10] Areas...")
+        area_map = migrate_areas(sr, pg)
+        
+        print("[3/10] Tables...")
+        table_map = migrate_tables(sr, pg, area_map)
+        
+        print("[4/10] Product groups...")
+        group_map = migrate_groups(sr, pg)
+        
+        print("[5/10] Products...")
+        prod_map = migrate_products(sr, pg, group_map)
+        
+        print("[6/10] Users (meseros)...")
+        user_map = migrate_users(sr, pg)
+        
+        print("[7/10] Cash station...")
+        station_id = migrate_cash_station(pg)
+        print(f"  Station id: {station_id}")
+        
+        print("[8/10] Shifts (turnos)...")
+        shift_map = migrate_shifts(sr, pg, user_map, station_id)
+        
+        print("[9/10] Orders (in batches of 5000)...")
+        max_folio = int(sr_scalar(sr, "SELECT MAX(folio) FROM cheques") or 0)
+        total_orders = 0
+        batch_size = 5000
+        folio = 0
+        
+        while folio <= max_folio:
+            batch_end = folio + batch_size
+            t0 = time.time()
+            count = migrate_orders_batch(sr, pg, prod_map, user_map, table_map, area_map,
+                                         shift_map, pm_map, station_id, folio, batch_end - 1)
+            elapsed = time.time() - t0
+            total_orders += count
+            if count > 0:
+                print(f"    Batch {folio}-{batch_end-1}: {count} orders ({elapsed:.1f}s)")
+            folio = batch_end
+        print(f"  Total orders: {total_orders}")
+        
+        print("[10/10] Suppliers & inventory...")
+        migrate_suppliers(sr, pg)
+        migrate_inventory(sr, pg)
+        
+        state = {
+            'last_full_migration': now_iso(),
+            'last_folio': max_folio,
+            'last_turno_sr': int(sr_scalar(sr, "SELECT MAX(idturno) FROM turnos") or 0),
+            'total_orders_migrated': total_orders,
+        }
+        save_state(state)
+        
+        print(f"\n{'='*60}")
+        print(f"MIGRATION COMPLETE!")
+        print(f"  Orders: {total_orders}")
+        print(f"  Last folio: {max_folio}")
+        print(f"{'='*60}\n")
+        
+    finally:
+        pg.close()
+
+def incremental_sync():
+    state = load_state()
+    last_folio = int(state.get('last_folio', 0))
+    
+    print(f"\nINCREMENTAL SYNC — Last folio: {last_folio}")
+    
+    sr = get_sr_session()
+    pg = get_pg()
+    
+    try:
+        max_folio = int(sr_scalar(sr, "SELECT MAX(folio) FROM cheques") or 0)
+        
+        if max_folio <= last_folio:
+            print("No new data.")
+            state['last_sync'] = now_iso()
+            save_state(state)
+            return
+        
+        print(f"New folios: {last_folio+1} → {max_folio}")
+        
+        cur = pg.cursor()
+        
+        # Load maps
+        cur.execute("SELECT code, id FROM products WHERE restaurant_id=%s", (RESTAURANT_ID,))
+        prod_map = {r[0]: r[1] for r in cur.fetchall()}
+        
+        cur.execute("SELECT email, id FROM users WHERE restaurant_id=%s", (RESTAURANT_ID,))
+        user_map = {}
+        for email, uid in cur.fetchall():
+            if email.startswith('sr') and '@' in email:
+                user_map[email.split('@')[0][2:]] = uid
+        
+        cur.execute("SELECT code, id FROM tables WHERE restaurant_id=%s", (RESTAURANT_ID,))
+        table_map = {r[0]: r[1] for r in cur.fetchall()}
+        
+        cur.execute("SELECT name, id FROM areas WHERE restaurant_id=%s", (RESTAURANT_ID,))
+        area_by_name = {r[0]: r[1] for r in cur.fetchall()}
+        area_rows = sr_query_rows(sr, "SELECT idarearestaurant, descripcion FROM areasrestaurant", ['idarearestaurant', 'descripcion'])
+        area_map = {}
+        for r in area_rows:
+            sr_id = str(r.get('idarearestaurant', '')).strip()
+            name = str(r.get('descripcion', '')).strip()
+            area_map[sr_id] = area_by_name.get(name)
+        
+        cur.execute("SELECT id FROM cash_stations WHERE restaurant_id=%s LIMIT 1", (RESTAURANT_ID,))
+        station_id = cur.fetchone()[0]
+        
+        # Rebuild shift map
+        cur.execute("SELECT opened_at::text, id FROM shifts WHERE restaurant_id=%s", (RESTAURANT_ID,))
+        existing_shifts_by_date = {r[0]: r[1] for r in cur.fetchall()}
+        
+        all_turnos = sr_query_rows(sr, "SELECT idturno, apertura FROM turnos", ['idturno', 'apertura'])
+        shift_map = {}
+        for t in all_turnos:
+            sr_id = str(t.get('idturno', '')).strip()
+            apertura = t.get('apertura')
+            if isinstance(apertura, str) and '/Date(' in apertura:
+                import re
+                ms = int(re.search(r'/Date\((-?\d+)', apertura).group(1))
+                apertura = datetime.fromtimestamp(ms / 1000, tz=timezone.utc).isoformat()
+            if apertura and str(apertura) in existing_shifts_by_date:
+                shift_map[sr_id] = existing_shifts_by_date[str(apertura)]
+        
+        # Migrate new shifts
+        last_turno = int(state.get('last_turno_sr', 0))
+        new_shifts = migrate_shifts(sr, pg, user_map, station_id, min_turno=last_turno)
+        shift_map.update(new_shifts)
+        
+        pm_map = migrate_payment_methods(pg)
+        
+        # Sync new orders
+        total = migrate_orders_batch(sr, pg, prod_map, user_map, table_map, area_map,
+                                     shift_map, pm_map, station_id, last_folio + 1, max_folio)
+        
+        state['last_folio'] = max_folio
+        state['last_turno_sr'] = int(sr_scalar(sr, "SELECT MAX(idturno) FROM turnos") or 0)
+        state['last_sync'] = now_iso()
+        state['total_orders_migrated'] = state.get('total_orders_migrated', 0) + total
+        save_state(state)
+        
+        print(f"Synced {total} new orders")
+        
+    finally:
+        pg.close()
+
+def show_status():
+    state = load_state()
+    print(f"\n{'='*40}")
+    print("Sync Status: La Llorona")
+    for k, v in state.items():
+        print(f"  {k}: {v}")
+    try:
+        sr = get_sr_session()
+        max_folio = int(sr_scalar(sr, "SELECT MAX(folio) FROM cheques") or 0)
+        pending = max_folio - int(state.get('last_folio', 0))
+        print(f"\n  SR max folio: {max_folio}")
+        print(f"  Pending: {pending}")
+    except:
+        print("  (Cannot reach SR)")
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--full', action='store_true')
+    group.add_argument('--sync', action='store_true')
+    group.add_argument('--status', action='store_true')
+    args = parser.parse_args()
+    
+    if args.full:
+        full_migration()
+    elif args.sync:
+        incremental_sync()
+    elif args.status:
+        show_status()

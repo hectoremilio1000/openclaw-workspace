@@ -1,72 +1,91 @@
-.DS_Store
-.env
-**/.env
+# ============================
+# OpenClaw Workspace — Git Sync
+# ONLY portable OpenClaw config, skills, memory, scripts, docs
+# ============================
+
+# Microservices / frontend apps (have their own repos)
+pos_admin_front/
+pos_cash_front/
+pos_centro_front/
+pos_comandero_front/
+pos_monitor_front/
+pos_website_template/
+pos_bot_simulator/
+pos_whatsapp_demo/
+front_pos_facturas/
+
+# Credentials (NEVER sync)
+TOOLS.md
+.env*
+**/.env*
 !.env.example
 !**/.env.example
-.vercel
-
-# Local sync tooling and private operational data (do not commit by default)
-cloud_sync.py
-cloud_sync_fast.py
-cloud_sync_v2.py
-cloud_sync_v3.py
-db_sync_full.py
-db_sync_v2.py
-db_sync_v3.py
-fix_all.py
-fix_remaining.py
-investigate_movtos.py
-investigate_sr.py
-investigate_sr2.py
-investigate_sr3.py
-migrate_llorona_inventory.py
-mirror_to_llorona2.py
-sync_llorona.py
-sync_llorona_demo2.py
-sync_llorona.py.bak
-mirror_llorona2_state.json
-sync_llorona_state.json
-sync_llorona_demo2_state.json
-
-# Local datasets and large files
-llorona_data/
-video_compras.mp4
-video_inventario.mp4
-video_ventas.mp4
-softrestaurant-sync.skill
-
-# Temporary screenshots (keep skill-generated ones out)
-auto-screenshot*.png
-auto-screenshot*.jpg
-temp-screenshot*.png
-temp-*.png
-temp-*.jpeg
-tmp/
 
 # Node
 node_modules/
+**/node_modules/
 package-lock.json
 
-# Build artifacts
-build/
-dist/
+# Temp / screenshots
+tmp/
+auto-screenshot*
+temp-screenshot*
+temp-*.png
+temp-*.jpeg
 
 # OS
-.obsidian/
-.obsidianignore
+.DS_Store
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
 
-# Bot simulator cache (large)
-pos_bot_simulator/.npm-cache/
-pos_bot_simulator/node_modules/
+# Large binary files
+*.mp4
+*.xlsx
+llorona_data/
 
-# Whatsapp demo node_modules
-pos_whatsapp_demo/node_modules/
+# Memory files with credentials (from earlier audit)
+memory/2026-02-15.md
+memory/2026-02-17.md
+memory/2026-02-26.md
+memory/2026-03-02.md
+memory/2026-03-10.md
+memory/2026-03-21.md
+memory/growthsuite-architecture-v2.md
 
-# Front apps (cloned separately)
-pos_admin_front/node_modules/
-pos_cash_front/node_modules/
-pos_centro_front/node_modules/
-pos_comandero_front/node_modules/
-pos_monitor_front/node_modules/
-pos_website_template/node_modules/
-front_pos_facturas/node_modules/
+# Archive folder has content with secrets
+archive/
+
+# Assets (binary, not portable)
+assets/
+
+# Data folder
+data/
+
+# Legacy sync scripts
+cloud_sync*.py
+db_sync*.py
+fix_all.py
+fix_remaining.py
+investigate_*.py
+migrate_*.py
+mirror_*.py
+sync_llorona*.py
+*_state.json
+softrestaurant-sync.skill
+
+# Scripts with secrets
+scripts/clone-fogo-to-dev.mjs
+scripts/fix-zombie-shift.mjs
+scripts/fixes/fix_sequences_cron.js
+scripts/fogo-backfill.mjs
+scripts/fogo-simulator.mjs
+scripts/sync/copy_r13_to_r27.py
+scripts/node_modules/
+
+# Misc
+.vercel
+build/
+dist/
+projects/
+.clawhub/lock.json
+.openclaw/workspace-state.json
