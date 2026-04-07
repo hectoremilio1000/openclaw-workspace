@@ -4,8 +4,25 @@
 >
 > **Convención:** este archivo se actualiza al final de cada sesión de trabajo significativa, en cualquier máquina. Es la "memoria operativa" del proyecto.
 
-**Última actualización:** 2026-04-06 18:20 CST (Mac 1, sesión OpenClaw Opus 4.6)
+**Última actualización:** 2026-04-06 19:10 CST (Mac 1, sesión OpenClaw Opus 4.6)
 **Próxima actualización esperada:** al cerrar la próxima sesión de trabajo
+
+## 🆕 Plan operativo activo (2026-04-06)
+
+**Doble vía en paralelo, una por Mac:**
+
+### Mac 1 (esta) — Testing del bot v1
+Objetivo: generar dataset de 1000 preguntas categorizadas, correrlas contra el bot v1 actual, mapear hueco por hueco.
+- **Plan:** [`projects/growthsuite/bot-testing/1000-question-evaluation-plan.md`](./bot-testing/1000-question-evaluation-plan.md)
+- **Estado:** Plan diseñado. Próximo: generar Cat G (seguridad).
+
+### Mac 2 (otra) — Construcción de infra del bot v2
+Objetivo: poco a poco construir las capas formales del cerebro descritas en el blueprint matemático.
+- **Blueprint:** [`knowledge/architecture/growthsuite/cerebro-mathematical-blueprint.md`](../../knowledge/architecture/growthsuite/cerebro-mathematical-blueprint.md)
+- **Estado:** Blueprint v0.1 listo para revisión por ChatGPT (10 preguntas abiertas marcadas 🟡)
+- **Primer paso real:** Track 1 #1 (G12 fix) en cuanto se confirme.
+
+**Sincronización:** todo lo durable de ambos tracks vive en este workspace y se sincroniza vía git cron cada hora.
 
 ---
 
