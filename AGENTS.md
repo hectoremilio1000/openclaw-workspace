@@ -15,6 +15,20 @@ Before doing anything else:
 3. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
 4. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
 5. **ALWAYS** read `memory/model-playbook.md` — ensures consistent quality across all models
+6. **ALWAYS** read `knowledge/README.md` — this is the knowledge hub with patterns, decisions, and rules shared across all agents and machines
+
+## Knowledge Hub
+
+The `knowledge/` folder is the source of truth for:
+- **`knowledge/claude-rules/global.md`** — global behavior rules (read at session start)
+- **`knowledge/claude-rules/per-project/*.md`** — project-specific rules
+- **`knowledge/agent-patterns/*.md`** — distilled patterns (strangler-fig, policy-engine, tool-calling-vs-keywords, multi-tenant-isolation). Read these on-demand when the task requires the pattern.
+- **`knowledge/decisions/YYYY-MM-DD-*.md`** — decision log. When user refers to a past decision, check here.
+- **`knowledge/claude-code-internals/`** — lessons from studying Claude Code source
+
+When you learn something worth remembering for the long term, write it to `knowledge/` — NOT to `memory/` (memory is for daily notes, knowledge is for durable patterns and decisions).
+
+The entire workspace syncs automatically between machines via `github.com/hectoremilio1000/openclaw-workspace` (cron every 2h).
 
 Don't ask permission. Just do it.
 
