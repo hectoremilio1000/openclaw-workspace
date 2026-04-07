@@ -11,31 +11,61 @@ Esta carpeta es el **source of truth** para todo el conocimiento persistente que
 ## Estructura
 
 ```
-knowledge/
-├── README.md                            ← este archivo
+~/.openclaw/workspace/
 │
-├── claude-code-internals/               ← aprendizajes del source de Claude Code
-│   ├── README.md
-│   ├── knowledge.md                     ← destilado de alto nivel
-│   ├── architecture.md                  ← análisis técnico del source
-│   └── patterns.md                      ← patrones extraíbles
+├── knowledge/                            ← conocimiento DURABLE
+│   ├── README.md                         ← este archivo
+│   │
+│   ├── claude-code-internals/            ← aprendizajes del source de Claude Code
+│   │   ├── README.md
+│   │   ├── knowledge.md
+│   │   ├── architecture.md
+│   │   └── patterns.md
+│   │
+│   ├── claude-rules/                     ← reglas para mis agentes
+│   │   ├── global.md                     ← aplica a TODOS los proyectos (symlink target)
+│   │   └── per-project/
+│   │       └── growthsuite.md
+│   │
+│   ├── agent-patterns/                   ← patrones reutilizables atemporales
+│   │   ├── strangler-fig.md
+│   │   ├── policy-engine.md
+│   │   ├── tool-calling-vs-keywords.md
+│   │   └── multi-tenant-isolation.md
+│   │
+│   ├── architecture/                     ← diseños vivos de sistemas concretos
+│   │   ├── README.md
+│   │   └── growthsuite/
+│   │
+│   └── decisions/                        ← ADRs (Architecture Decision Records)
+│       ├── 2026-04-06-g12-fix-priority.md
+│       ├── 2026-04-06-strangler-fig-approach.md
+│       ├── 2026-04-06-bot-track-1-sprint.md
+│       └── 2026-04-06-hub-setup-codex-feedback.md
 │
-├── claude-rules/                        ← reglas para mis agentes
-│   ├── global.md                        ← aplica a TODOS los proyectos
-│   └── per-project/
-│       └── growthsuite.md               ← reglas específicas del POS
+├── projects/                             ← ESTADO VIVO de proyectos activos
+│   └── growthsuite/
+│       └── current-state.md              ← ⭐ LEER PRIMERO al retomar el proyecto
 │
-├── agent-patterns/                      ← patrones destilados de la práctica
-│   ├── strangler-fig.md                 ← migración sin downtime
-│   ├── policy-engine.md                 ← razonamiento vs control vs ejecución
-│   ├── tool-calling-vs-keywords.md      ← LLM como agente real
-│   └── multi-tenant-isolation.md        ← seguridad cross-tenant
+├── memory/                               ← daily notes (no durable)
+│   ├── YYYY-MM-DD.md
+│   └── model-playbook.md
 │
-└── decisions/                           ← decision log
-    ├── 2026-04-06-g12-fix-priority.md
-    ├── 2026-04-06-strangler-fig-approach.md
-    └── 2026-04-06-bot-track-1-sprint.md
+├── skills/                               ← skills custom (porabledos)
+└── scripts/
+    ├── setup-new-machine.sh              ← setup automatizado
+    └── setup-project-for-agents.sh       ← configurar un proyecto nuevo
 ```
+
+### Diferencia clave: knowledge/ vs projects/ vs memory/
+
+| Carpeta | Naturaleza | Frecuencia de cambio | Ejemplo |
+|---------|------------|---------------------|---------|
+| **`knowledge/`** | Durable | Meses/años | Strangler Fig pattern |
+| **`projects/`** | Estado vivo | Diario/semanal | current-state.md de growthsuite |
+| **`memory/`** | Notas diarias | Cada sesión | 2026-04-06.md, daily notes |
+
+**Regla:** si algo importa para continuidad entre máquinas/sesiones, va en `knowledge/` o `projects/`. Si es una nota volatil de hoy, va en `memory/`.
 
 ## Cómo lo leen mis agentes
 
@@ -79,26 +109,50 @@ El workspace completo está en git: **`github.com/hectoremilio1000/openclaw-work
 - Ver: `~/.openclaw/workspace/memory/cron-jobs.md` o la lista de cron jobs en OpenClaw
 
 ### En la otra computadora (setup inicial, una sola vez)
+
+**✅ Recomendado: usar el script automatizado**
 ```bash
-# 1. Clonar el workspace
-cd ~
-rm -rf .openclaw/workspace   # o backup si hay algo
+bash <(curl -fsSL https://raw.githubusercontent.com/hectoremilio1000/openclaw-workspace/main/scripts/setup-new-machine.sh)
+```
+
+O si ya tienes el repo clonado:
+```bash
+bash ~/.openclaw/workspace/scripts/setup-new-machine.sh
+```
+
+**O manualmente con las buenas prácticas (incorporando feedback de Codex 2026-04-06):**
+```bash
+# 1. Backup si ya existe (NUNCA usar rm -rf)
+if [ -d ~/.openclaw/workspace ]; then
+  mv ~/.openclaw/workspace ~/.openclaw/workspace.backup-$(date +%Y%m%d-%H%M%S)
+fi
+
+# 2. Clonar el workspace
+mkdir -p ~/.openclaw
 git clone https://github.com/hectoremilio1000/openclaw-workspace.git ~/.openclaw/workspace
 
-# 2. Symlink para Claude Code
+# 3. Symlink para Claude Code
 mkdir -p ~/.claude
 ln -sf ~/.openclaw/workspace/knowledge/claude-rules/global.md ~/.claude/CLAUDE.md
 
-# 3. Symlink para Codex (si usas Codex en terminal)
-# Ajustar según tu config de Codex:
-# ln -sf ~/.openclaw/workspace/knowledge/claude-rules/global.md ~/.codex/instructions
+# 4. Symlink para Codex
+mkdir -p ~/.codex
+ln -sf ~/.openclaw/workspace/knowledge/claude-rules/global.md ~/.codex/AGENTS.md
 
-# 4. Abrir Obsidian con este vault
+# 5. Cron seguro de pull cada hora con --ff-only y logging
+( crontab -l 2>/dev/null; echo '0 * * * * cd ~/.openclaw/workspace && git pull --ff-only origin main >> ~/.openclaw/sync.log 2>&1 || echo "[$(date)] sync failed" >> ~/.openclaw/sync.log' ) | crontab -
+
+# 6. Abrir Obsidian con este vault
 open -a Obsidian ~/.openclaw/workspace
-
-# 5. (Opcional) Cron de pull cada hora
-( crontab -l 2>/dev/null; echo "0 * * * * cd ~/.openclaw/workspace && git pull origin main" ) | crontab -
 ```
+
+**Por qué estas reglas (vs versión anterior):**
+- `mv` en lugar de `rm -rf`: nunca destruyes trabajo no commiteado
+- `--ff-only` en el pull: nunca merges automáticos sin supervisión
+- Logging del sync: si falla, queda registro en `~/.openclaw/sync.log`
+- `|| echo`: previene cron error loops sin perder visibilidad
+
+Ver el ADR completo en: `knowledge/decisions/2026-04-06-hub-setup-codex-feedback.md`
 
 Setup total en la otra compu: **30 segundos**.
 

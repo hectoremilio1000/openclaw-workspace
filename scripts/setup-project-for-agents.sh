@@ -78,6 +78,16 @@ else
 fi
 
 echo ""
+# 4. Recordatorio: si configuras una segunda Máquina, NO uses rm -rf
+echo ""
+echo "💡 Reminder: when setting up the workspace on a SECOND machine, use:"
+echo "   if [ -d ~/.openclaw/workspace ]; then"
+echo "     mv ~/.openclaw/workspace ~/.openclaw/workspace.backup-\$(date +%Y%m%d-%H%M%S)"
+echo "   fi"
+echo "   git clone https://github.com/hectoremilio1000/openclaw-workspace.git ~/.openclaw/workspace"
+echo ""
+echo "   NEVER use 'rm -rf' on existing workspace — always backup first."
+echo ""
 echo "✨ Done! Now when you run:"
 echo "   cd $PROJECT_DIR"
 echo "   claude    # Claude Code reads ./CLAUDE.md + ~/.claude/CLAUDE.md (symlink to hub)"

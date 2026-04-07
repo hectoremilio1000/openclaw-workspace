@@ -86,6 +86,7 @@ scripts/node_modules/
 .vercel
 build/
 dist/
-projects/
+# projects/  ← was excluded, now we DO want it for current-state.md and project tracking
+# Only exclude if you have heavy code there. The growthsuite/current-state.md MUST sync.
 .clawhub/lock.json
 .openclaw/workspace-state.json
