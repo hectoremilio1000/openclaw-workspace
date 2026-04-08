@@ -81,14 +81,27 @@ Tickets:
 - [ ] #11 Manual smoke tests script — 0.5 días
 
 ### Sprint Track 2 — Blueprint del bot v2 (paralelo, 1-2 semanas)
-**Estado:** No iniciado. Pendiente luz verde para escribir el doc.
-**Output esperado:** `docs/bot-v2-blueprint.md` con los 6 bloques arquitectónicos:
+**Estado:** Blueprint matemático v0.1 ya existe en el workspace.
+**Doc actual:** `knowledge/architecture/growthsuite/cerebro-mathematical-blueprint.md`
+**Output esperado final:** `docs/bot-v2-blueprint.md` en el repo del proyecto cuando madure.
+Bloques arquitectónicos definidos:
 1. Event log unificado
 2. Metrics layer (daily_metrics_by_restaurant materialized)
 3. Tool registry tipado con metadata de riesgo
 4. Policy Engine determinístico
 5. Domain Services puros
 6. Evaluator (cierra el loop de aprendizaje)
+
+### Estado reciente del core POS — Customer unification
+**Estado:** mergeado a `dev` y `main` el 2026-04-07.
+**PRs:** pos-app #54 (`arreglosJampier62 -> dev`), #55 (`dev -> main`).
+**Qué cambió:** tabla `customers` unificada + `coupons` + `coupon_redemptions` + FKs desde orders/reservations/invoices.
+**Lectura correcta:** esto fortalece el **core POS / CRM base**. **No es todavía el brain.**
+**Riesgo:** migración/compatibilidad, no visión.
+**Docs:**
+- `knowledge/decisions/2026-04-07-customer-unification-merge-boundary.md`
+- `docs/jampier-review-customers-brain-boundary.md`
+- `scripts/reset-local-customer-unification.sh` (para máquina local de Héctor)
 
 ---
 
