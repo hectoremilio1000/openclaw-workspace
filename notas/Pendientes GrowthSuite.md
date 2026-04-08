@@ -1,6 +1,30 @@
 # 📋 Pendientes GrowthSuite
 
-> Última actualización: 2026-04-07
+> Última actualización: 2026-04-08
+
+---
+
+## 🧠 Foco estratégico: construir EL CEREBRO, no el POS
+
+**Status:** Dirección de producto — reorientar prioridades
+**Origen:** Héctor (2026-04-08)
+
+**Insight clave:** Mi POS hoy es *una* implementación para restaurantes, pero lo verdaderamente valioso —y lo que hay que construir— es **el cerebro**: una capa de IA/agentes que se pueda **enchufar a cualquier CRM o POS** de cualquier empresa, no solo al mío.
+
+**El POS es el punto de partida, no el producto final.**
+- El POS me sirve como primer cliente / banco de pruebas real del cerebro.
+- Pero el moat no está en tener otro POS más en el mercado —hay cientos. Está en tener **un cerebro que entienda operaciones de negocio** y se conecte a lo que sea (SoftRestaurant, Clip, Square, HubSpot, Salesforce, Odoo, etc.).
+
+**Qué significa en la práctica:**
+- Diseñar el cerebro como **capa independiente** con adaptadores (ingestion layer) en vez de acoplarlo al schema de GrowthSuite POS.
+- Pensar en abstracciones genéricas: "venta", "cliente", "inventario", "turno", "empleado" — no en tablas específicas de mi POS.
+- Toda feature nueva del POS debe preguntarse: *¿esto alimenta al cerebro o solo es chamba de POS?* Priorizar lo primero.
+- El bot (pos_bot_api) es el embrión del cerebro. Hay que sacarlo del POS y volverlo producto por sí mismo.
+
+**Pendiente concreto:**
+- [ ] Documentar arquitectura target: *Cerebro* (agentes + memoria + tool-calling) ⇄ *Adaptadores* (POS/CRM connectors) ⇄ *Clientes* (restaurantes, retail, servicios)
+- [ ] Definir el "contrato" mínimo que cualquier POS/CRM debe exponer para que el cerebro lo entienda
+- [ ] Revisar qué del bot actual ya es genérico y qué está hard-coded a GrowthSuite
 
 ---
 
@@ -169,6 +193,7 @@ const query = Role.query()
 - [ ] Configurar Finca Robles completo (usuarios, menú, etc.)
 - [ ] Resolver issues de devJampier55 con Jampier
 - [ ] Rediseño completo de roles (Opción B) cuando haya tiempo
+- [ ] **Cambiar clave de owner a PIN de 6 dígitos** — hoy el owner usa contraseña alfanumérica (ej. `secret123`) mientras meseros/cajeros usan PIN. Unificar: owner también con PIN de 6 dígitos para no estar saltando entre formatos de login. Revisar impacto en pos_auth_api y flujo de admin login.
 
 ---
 
