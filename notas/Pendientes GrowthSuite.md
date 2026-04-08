@@ -4,6 +4,61 @@
 
 ---
 
+## 🖥️ POS Admin todo-en-uno (modo solo-operador)
+
+**Status:** Idea / decisión de producto pendiente
+**Origen:** Héctor — muchos restaurantes pequeños los opera **una sola persona con una laptop**. Hoy tendría que abrir 3-4 apps distintas (Admin + Comandero + Caja + Monitor + Reservaciones). Eso no escala para el segmento chico.
+
+**Idea base:** Que **Pos Admin** sea capaz de hostear, dentro de la misma app, las interfaces de:
+- Comandero (tomar pedidos en mesa)
+- Caja (cobrar, cortar)
+- Monitor de cocina (KDS)
+- Reservaciones (hostess / capitán)
+
+Así un operador solo abre **Admin**, y desde un menú lateral o pestañas cambia a la vista que necesita en ese momento. Una computadora, una app, un login.
+
+### Por qué tiene sentido
+- **Restaurantes pequeños (1 persona):** taquerías, cafeterías, fondas, food trucks. No quieren 4 dispositivos ni 4 apps.
+- **Onboarding más simple:** "abre admin y empieza", vs "empareja tu comandero, luego empareja tu caja, luego empareja tu monitor".
+- **Costo de hardware bajo:** una laptop vieja basta.
+- **No rompe nada para los grandes:** los que ya usan kiosk pairing para Comandero/Caja/Monitor en tablets siguen igual. Esto es una vista adicional, no un reemplazo.
+- **Ya tenemos los componentes:** los fronts de comandero, caja y monitor existen. Hay que decidir si los importamos como módulos o los reusamos como iframes/microfrontends.
+
+### Opciones de implementación (a decidir)
+1. **Microfrontend / module federation:** Admin carga dinámicamente los bundles de comandero/caja/monitor. Más limpio, más trabajo de build.
+2. **Monorepo + import directo:** mover los componentes de comandero/caja/monitor a un paquete compartido y montarlos dentro de Admin como rutas.
+3. **Iframes:** la más rápida y fea. Cada front sigue siendo independiente y Admin los embebe. Problemas de auth, eventos, performance.
+4. **Reescribir vistas "lite" dentro de Admin:** versiones simplificadas pensadas para 1 operador, no para staff dedicado. Más control de UX, más mantenimiento.
+
+**Mi voto inicial:** opción 2 (monorepo + import) para comandero/caja/monitor, porque ya viven en el mismo grupo de repos. Reservaciones puede ir como módulo nativo de Admin desde el principio.
+
+### Reservaciones dentro de Admin
+Dos sub-casos:
+- **Modo hostess (puesto dedicado):** una compu en la entrada con Admin abierto en la vista de reservaciones, calendario del día, walk-ins, asignación de mesa. Puede ser una vista full-screen.
+- **Modo capitán / dueño:** dentro del flujo de Admin normal, una sección para crear/editar/confirmar reservas, ver el día, mover mesas, marcar no-shows.
+
+Las dos vistas comparten el mismo backend (`pos_reservaciones_api`), solo cambia el shell. Esto resuelve el caso de hostess sin tener que mantener una app separada.
+
+### Qué hay que decidir
+- [ ] ¿Modo todo-en-uno se activa por **plan** (ej. plan Starter), por **toggle** del dueño, o siempre disponible?
+- [ ] ¿Permisos del operador solo? (probablemente un rol nuevo: "Operador solo" con todos los permisos relevantes)
+- [ ] Técnica de integración: microfrontend vs monorepo vs iframe vs reescritura
+- [ ] ¿Reservaciones en Admin reemplaza al front actual de reservaciones o convive?
+- [ ] ¿Impresión de ticket en modo solo-operador? (la misma laptop debe imprimir comanda + ticket de cobro)
+- [ ] Hardware mínimo soportado oficialmente
+- [ ] ¿Hay que repensar pairing/kiosk para este modo? (probablemente NO se usa pairing, solo login normal)
+
+### Conexión con la nota de dominios
+- Comandero / Caja / Monitor / Reservaciones (modo hostess) → **OPERACIÓN**
+- Reservaciones como herramienta de promover horarios bajos → **VENTAS**
+- Esta consolidación no crea un nuevo dominio, solo reempaqueta varios features de OPERACIÓN en un shell unificado para un segmento específico.
+
+### Referencias
+- [[Pendientes - Features divididos por dominio (Ventas, Costos, Operacion)]]
+- TOOLS.md → fronts de admin / comandero / caja / monitor / reservaciones
+
+---
+
 ## 🧩 Inventario como módulo aparte (revisar con Jampier)
 
 **Status:** Idea / decisión arquitectónica pendiente
