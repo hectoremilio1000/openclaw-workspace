@@ -1,5 +1,97 @@
 # Fogo Simulator Errors
 
+## 2026-04-08 04:00 UTC / 2026-04-07 10:00 PM America/Mexico_City
+
+### PRODUCTION
+Command:
+```bash
+cd /Users/hectorvelasquez/.openclaw/workspace/scripts && NODE_PATH=/tmp/node_modules node fogo-simulator.mjs
+```
+
+Output:
+```text
+🔥 Fogo de Chão Simulator v2 — 2026-04-08T04:00:14.139Z
+📍 Phase: close (22:00 MX)
+──────────────────────────────────────────────────
+  🛡️ Safety: 0/300 orders today
+🔒 PHASE: CLOSE — End of day
+  🍽️ Orders: 5 created, revenue: $41133.60
+  💳 Payments created: 0
+❌ Error: duplicate key value violates unique constraint "shift_totals_pkey"
+error: duplicate key value violates unique constraint "shift_totals_pkey"
+    at /Users/hectorvelasquez/.openclaw/workspace/scripts/node_modules/pg/lib/client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async phaseClose (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:519:5)
+    at async main (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:771:25) {
+  length: 234,
+  severity: 'ERROR',
+  code: '23505',
+  detail: 'Key (shift_id, payment_method_id)=(118209, 1) already exists.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'shift_totals',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'shift_totals_pkey',
+  file: 'nbtinsert.c',
+  line: '666',
+  routine: '_bt_check_unique'
+}
+
+(Process exited with code 1)
+```
+
+### DEV
+Command:
+```bash
+cd /Users/hectorvelasquez/.openclaw/workspace/scripts && NODE_PATH=/tmp/node_modules node fogo-simulator.mjs --dev
+```
+
+Output:
+```text
+🔧 DEV MODE: restaurant r9 (mapped from prod r40)
+
+🔥 Fogo de Chão Simulator v2 — 2026-04-08T04:00:14.077Z
+📍 Phase: close (22:00 MX)
+──────────────────────────────────────────────────
+  🛡️ Safety: 0/300 orders today
+🔒 PHASE: CLOSE — End of day
+  🍽️ Orders: 12 created, revenue: $74095.00
+  💳 Payments created: 0
+❌ Error: duplicate key value violates unique constraint "shift_totals_pkey"
+error: duplicate key value violates unique constraint "shift_totals_pkey"
+    at /Users/hectorvelasquez/.openclaw/workspace/scripts/node_modules/pg/lib/client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async phaseClose (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:519:5)
+    at async main (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:771:25) {
+  length: 230,
+  severity: 'ERROR',
+  code: '23505',
+  detail: 'Key (shift_id, payment_method_id)=(24, 7) already exists.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'shift_totals',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'shift_totals_pkey',
+  file: 'nbtinsert.c',
+  line: '666',
+  routine: '_bt_check_unique'
+}
+
+(Process exited with code 1)
+```
+
+# Fogo Simulator Errors
+
 ## 2026-04-07 04:00 UTC / 2026-04-06 10:00 PM America/Mexico_City
 
 ### PRODUCTION
