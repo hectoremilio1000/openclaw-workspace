@@ -277,3 +277,95 @@ error: null value in column "cash_session_id" of relation "shift_declarations" v
 
 (Command exited with code 1)
 ```
+
+## 2026-04-09 04:00 UTC / 2026-04-08 10:00 PM America/Mexico_City
+
+### PRODUCTION
+Command:
+```bash
+cd /Users/hectorvelasquez/.openclaw/workspace/scripts && NODE_PATH=/tmp/node_modules node fogo-simulator.mjs
+```
+
+Output:
+```text
+🔥 Fogo de Chão Simulator v2 — 2026-04-09T04:00:13.477Z
+📍 Phase: close (22:00 MX)
+──────────────────────────────────────────────────
+  🛡️ Safety: 21/300 orders today
+🔒 PHASE: CLOSE — End of day
+  🍽️ Orders: 7 created, revenue: $51158.60
+  💳 Payments created: 0
+  📊 Shift totals: 7 payment methods
+❌ Error: null value in column "cash_session_id" of relation "shift_declarations" violates not-null constraint
+error: null value in column "cash_session_id" of relation "shift_declarations" violates not-null constraint
+    at /Users/hectorvelasquez/.openclaw/workspace/scripts/node_modules/pg/lib/client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async phaseClose (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:533:5)
+    at async main (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:771:25) {
+  length: 352,
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (118211, 1, 2026-04-09 04:00:33.668533+00, 2026-04-09 04:00:33.668533+00, 92237.45, 92245.45, 8.00, t, null, null, 9691).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'shift_declarations',
+  column: 'cash_session_id',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2022',
+  routine: 'ExecConstraints'
+}
+
+(Process exited with code 1)
+```
+
+### DEV
+Command:
+```bash
+cd /Users/hectorvelasquez/.openclaw/workspace/scripts && NODE_PATH=/tmp/node_modules node fogo-simulator.mjs --dev
+```
+
+Output:
+```text
+🔧 DEV MODE: restaurant r9 (mapped from prod r40)
+
+🔥 Fogo de Chão Simulator v2 — 2026-04-09T04:00:13.435Z
+📍 Phase: close (22:00 MX)
+──────────────────────────────────────────────────
+  🛡️ Safety: 11/300 orders today
+🔒 PHASE: CLOSE — End of day
+  🍽️ Orders: 7 created, revenue: $39909.80
+  💳 Payments created: 0
+  📊 Shift totals: 7 payment methods
+❌ Error: null value in column "cash_session_id" of relation "shift_declarations" violates not-null constraint
+error: null value in column "cash_session_id" of relation "shift_declarations" violates not-null constraint
+    at /Users/hectorvelasquez/.openclaw/workspace/scripts/node_modules/pg/lib/client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async phaseClose (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:533:5)
+    at async main (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:771:25) {
+  length: 345,
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (26, 1, 2026-04-09 04:00:25.79752+00, 2026-04-09 04:00:25.79752+00, 90010.05, 90035.05, 25.00, t, null, null, 10).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'shift_declarations',
+  column: 'cash_session_id',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2022',
+  routine: 'ExecConstraints'
+}
+
+(Process exited with code 1)
+```
