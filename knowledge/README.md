@@ -36,12 +36,28 @@ Esta carpeta es el **source of truth** para todo el conocimiento persistente que
 │   ├── architecture/                     ← diseños vivos de sistemas concretos
 │   │   ├── README.md
 │   │   └── growthsuite/
+│   │       ├── README.md                 ← indice de arquitectura GrowthSuite
+│   │       ├── growthsuite-one-shell.md  ← vision shell unificado
+│   │       ├── roadmap-cerebro-v1.md     ← brujula maestra del cerebro
+│   │       ├── cerebro-mathematical-blueprint.md
+│   │       ├── cerebro-database-diagram.md
+│   │       └── roadmap-visual-linear.md
+│   │
+│   ├── programming/                      ← como programar bien (con IA y sin ella)
+│   │   ├── README.md
+│   │   ├── coding-with-ai-agents.md      ← reglas para trabajar con Claude Code/Codex
+│   │   ├── tool-calling-pattern.md       ← tool-calling vs keywords
+│   │   ├── adonis-patterns.md            ← patrones AdonisJS v6
+│   │   └── typescript-rules.md           ← reglas TypeScript
 │   │
 │   └── decisions/                        ← ADRs (Architecture Decision Records)
 │       ├── 2026-04-06-g12-fix-priority.md
 │       ├── 2026-04-06-strangler-fig-approach.md
 │       ├── 2026-04-06-bot-track-1-sprint.md
-│       └── 2026-04-06-hub-setup-codex-feedback.md
+│       ├── 2026-04-06-hub-setup-codex-feedback.md
+│       ├── 2026-04-09-growthsuite-shell-unificado.md
+│       ├── 2026-04-09-cerebro-v1-loop.md
+│       └── 2026-04-09-bot-vs-wizard-vs-brain.md
 │
 ├── projects/                             ← ESTADO VIVO de proyectos activos
 │   └── growthsuite/
