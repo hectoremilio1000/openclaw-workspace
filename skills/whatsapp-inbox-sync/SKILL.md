@@ -48,6 +48,13 @@ This skill is for **capturing, summarizing, routing, and storing** important cha
    If files were updated, tell the user what changed and whether it should be committed/pushed.
    Do not push unless explicitly allowed by the active instructions.
 
+7. **Use the OpenClaw channel-sync architecture when automation is requested**
+   If the user wants WhatsApp ↔ TUI synchronization to be automatic, treat it as personal OpenClaw infrastructure.
+   Read `references/sync-playbook.md` and route the design toward:
+   - local raw-message storage in `~/.openclaw/state/channel-sync/`
+   - summarized knowledge in `~/.openclaw/workspace/memory/` and `knowledge/`
+   - no raw WhatsApp history in git
+
 ## Decision rules
 
 ### When to create a new file
