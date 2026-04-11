@@ -19,6 +19,7 @@
 | **cerebro-mathematical-blueprint.md** | La teoria detras del loop datos→estado→diagnostico→respuesta→impacto |
 | **cerebro-database-diagram.md** | ERD, tablas nuevas, SQL de migraciones, flujo entre servicios |
 | **roadmap-visual-linear.md** | Gantt de 6 semanas, boards estilo Linear, dependencias |
+| **cerebro-evaluation-frame.md** | Marco obligatorio para evaluar si el cerebro está bien planteado, si mejora al baseline y si respeta el loop/capas |
 
 ### 3. UX / Frontend
 | Archivo | Que responde |
@@ -32,19 +33,22 @@
 ### Si eres el CEO (Hector)
 1. `growthsuite-one-shell.md` — la vision completa
 2. `roadmap-cerebro-v1.md` — que sigue
-3. `roadmap-visual-linear.md` — timeline
+3. `cerebro-evaluation-frame.md` — como validar que el cerebro sí se comporte como se acordó
+4. `roadmap-visual-linear.md` — timeline
 
 ### Si eres el CTO (Jampier)
 1. `roadmap-cerebro-v1.md` — tu brujula de trabajo
-2. `cerebro-database-diagram.md` — las tablas que vas a crear
-3. `roadmap-visual-linear.md` — tus dependencias
-4. `growthsuite-one-shell.md` — para entender por que se pide lo que se pide
+2. `cerebro-evaluation-frame.md` — qué se considera un cerebro correcto vs un baseline generalista
+3. `cerebro-database-diagram.md` — las tablas que vas a crear
+4. `roadmap-visual-linear.md` — tus dependencias
+5. `growthsuite-one-shell.md` — para entender por que se pide lo que se pide
 
 ### Si eres un agente de IA (Claude Code / Codex)
 1. Lee `roadmap-cerebro-v1.md` para entender prioridades
-2. Antes de cualquier PR, responde las 3 preguntas del checklist (seccion 7)
-3. Si vas a tocar DB, consulta `cerebro-database-diagram.md`
-4. Si vas a tocar UI, consulta `growthsuite-one-shell.md`
+2. Lee `cerebro-evaluation-frame.md` para validar loop, capas, baseline y comportamiento esperado
+3. Antes de cualquier PR, responde las 3 preguntas del checklist (seccion 7)
+4. Si vas a tocar DB, consulta `cerebro-database-diagram.md`
+5. Si vas a tocar UI, consulta `growthsuite-one-shell.md`
 
 ---
 
