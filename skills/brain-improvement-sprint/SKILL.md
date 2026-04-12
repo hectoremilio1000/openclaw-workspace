@@ -17,6 +17,8 @@ Cuando el usuario dice "corre sprint nocturno de [feature]" o "mejora el cerebro
 2. **Duración máxima** — ej: "4 horas" (default: 4h)
 3. **Score target** — ej: "85% pass rate" (default: 80%)
 4. **Eval battery disponible** — `eval-battery.md` debe existir para el feature; si no existe, el sprint no arranca y debe reportar bloqueo
+5. **Buckets de score** — separar al menos: `business`, `product/procedural`, `action`, `edge`
+6. **Regression bucket** — re-run de fallidas + preguntas que antes pasaban + preguntas nuevas derivadas
 
 ## Paso 0 — Preparación
 
@@ -45,12 +47,33 @@ Cuando el usuario dice "corre sprint nocturno de [feature]" o "mejora el cerebro
 
 Para cada pregunta en `eval-battery.md`:
 
-1. Simular el estado del negocio (s_t^biz) usando datos reales de Fogo dev
-2. Simular el contexto de app (s_t^app) si la pregunta es de admin panel
+1. Simular el estado del negocio (s_t^biz) usando datos reales del entorno disponible
+2. Si la pregunta es de panel/admin/producto, validar o construir `appContext`
 3. Ejecutar la pregunta contra el brain/bot actual
 4. Comparar respuesta del brain vs gold answer
 5. Asignar pass/fail por pregunta
-6. Calcular score total: pass_count / total_count
+6. Clasificar cada pregunta en bucket:
+   - `business`
+   - `product/procedural`
+   - `action`
+   - `edge`
+7. Calcular score total y score por bucket
+
+### Contrato mínimo de appContext (si el feature toca panel)
+
+```ts
+type AppContext = {
+  route: string
+  screen: string
+  activeTab?: string
+  selectedEntityType?: string
+  selectedEntityId?: number
+  visibleActions: string[]
+  userRole: string
+}
+```
+
+Si el feature toca panel y no existe suficiente `appContext`, el sprint debe reportarlo como gap estructural, no improvisarlo silenciosamente.
 
 Guardar resultados en: `features/[feature]/eval-results/sprint-[fecha].md`
 
@@ -64,6 +87,9 @@ Para cada pregunta que falló:
    - **Safe degradation falta** — el brain inventa en vez de degradar útilmente
    - **Prompt débil** — el prompt del dominio no guía bien la respuesta una vez que la capacidad ya existe
    - **Capacidad existente mal conectada** — la query/adapter/tool existe pero el brain no la usa bien
+   - **App context missing** — falta contrato/contexto de pantalla real para responder bien una pregunta procedural
+   - **User flow missing** — la guía debería venir de `user-flows.md` pero no existe o es insuficiente
+   - **Action policy missing** — la respuesta requiere acción pero no hay policy clara para ejecutarla
 
 2. Agrupar fails por causa raíz
 3. Priorizar en este orden:
@@ -71,6 +97,7 @@ Para cada pregunta que falló:
    - capacidad/query
    - routing/clasificación
    - safe degradation
+   - app context / user flow / action policy
    - prompt
    - conexiones auxiliares
 
@@ -104,6 +131,18 @@ Para cada causa raíz, en orden de impacto:
 - Agregar fallback que responda algo útil en vez de inventar
 - Priorizar una alternativa operativa real, no una disculpa genérica
 
+### Si falta app context:
+- Crear o validar el contrato estructurado de contexto de pantalla
+- No resolver preguntas procedural complejas solo con texto libre si falta contexto real
+
+### Si falta user flow:
+- Actualizar `user-flows.md` con pasos reales antes de endurecer respuestas procedimentales
+- La guía de producto debe venir de flujo documentado, no de improvisación del modelo
+
+### Si falta action policy:
+- Documentar si la mejora vive en policy/action layer antes de tocar código del brain
+- No emular permisos inexistentes desde prompt
+
 ### Si prompt débil:
 - Mejorar el prompt del dominio solo después de confirmar que datos, capacidad y routing ya existen
 - NO cambiar el prompt global salvo instrucción explícita
@@ -113,15 +152,22 @@ Para cada causa raíz, en orden de impacto:
 - Arreglar import, wiring o uso en el pipeline
 - Verificar auth y contexto si aplica
 
+### Evidence check (obligatorio en cada iteración)
+- Toda afirmación numérica debe venir de query, tool o dato del estado
+- Toda guía procedimental debe venir de `user-flows.md` o del contexto real del panel
+- Si no hay evidencia suficiente, degradar útilmente
+
 ## Paso 4 — Re-evaluar
 
 Después de cada mejora:
-1. Correr la battery de nuevo (solo las preguntas que fallaron)
-2. Verificar que no rompió preguntas que antes pasaban (regresión)
-3. Actualizar score
-4. Si score >= target → pasar a Paso 5
-5. Si score < target Y queda tiempo → volver a Paso 2
-6. Si score < target Y no queda tiempo → pasar a Paso 5 con lo que hay
+1. Re-run de las preguntas que fallaron
+2. Re-run de al menos 5 preguntas que antes pasaban
+3. Agregar 2–3 preguntas nuevas derivadas de la falla corregida
+4. Verificar que no rompió preguntas que antes pasaban (regresión)
+5. Actualizar score total y score por bucket
+6. Si score >= target → pasar a Paso 5
+7. Si score < target Y queda tiempo → volver a Paso 2
+8. Si score < target Y no queda tiempo → pasar a Paso 5 con lo que hay
 
 ### Stop conditions (detener y reportar)
 - El siguiente fix requiere endpoint nuevo
@@ -140,22 +186,35 @@ Generar reporte final en: `features/[feature]/eval-results/sprint-[fecha]-report
 
 ## Resumen
 - Duración: Xh Xm
-- Score inicial: X/Y (Z%)
-- Score final: X/Y (Z%)
+- Score inicial total: X/Y (Z%)
+- Score final total: X/Y (Z%)
+- Buckets iniciales: business / product / action / edge
+- Buckets finales: business / product / action / edge
 - Mejora: +N puntos porcentuales
 - Iteraciones: N
+- Nota: este sprint mejora primero el cerebro conversacional/operativo, no demuestra por sí solo impacto real de negocio
 
 ## Preguntas mejoradas
 | # | Pregunta | Antes | Después | Causa raíz | Fix aplicado |
 |---|---|---|---|---|---|
 
 ## Preguntas que siguen fallando
-| # | Pregunta | Causa raíz | Por qué no se arregló | Siguiente paso |
-|---|---|---|---|---|
+| # | Pregunta | Bucket | Causa raíz | Por qué no se arregló | Siguiente paso |
+|---|---|---|---|---|---|
 
 ## Regresiones (antes pasaban, ahora fallan)
-| # | Pregunta | Causa de regresión |
-|---|---|---|
+| # | Pregunta | Bucket | Causa de regresión |
+|---|---|---|---|
+
+## Parches sugeridos por categoría
+- backend
+- front / appContext
+- query/capacidad
+- routing
+- prompt
+- docs / user-flows
+- policy / action-layer
+- dataset / datos
 
 ## Archivos tocados
 | Archivo | Tipo de cambio | Líneas +/- |
