@@ -20,11 +20,12 @@ Then read/analyze the copied file from there.
 
 ## Default intake flow
 
-1. Confirm the source path exists with shell.
-2. Create `/Users/hectorvelasquez/.openclaw/workspace/tmp/` if missing.
-3. Copy the file into that folder, preserving a recognizable name.
-4. Read/analyze the workspace-local copy.
-5. If the source path no longer exists, tell the user clearly and ask for a new stable path or direct upload.
+1. Try the exact source path first.
+2. If it fails, search for likely matches in the source directory and common local folders.
+3. Create `/Users/hectorvelasquez/.openclaw/workspace/tmp/` if missing.
+4. Copy the best match into that folder, preserving a recognizable name.
+5. Read/analyze the workspace-local copy.
+6. Only if no reasonable match exists, tell the user clearly and ask for a new stable path or direct upload.
 
 ## Shell pattern
 
@@ -41,22 +42,74 @@ cp "/Users/hectorvelasquez/Desktop/example.png" \
 ## For multiple screenshots
 
 Copy all of them first, then analyze from the workspace copies.
+If any exact path fails, do a fuzzy search before giving up.
+
+## Fuzzy recovery flow
+
+When a provided local path fails, search in this order:
+
+1. same directory as the original path
+2. `~/Desktop`
+3. `~/Downloads`
+4. `/var/folders/.../TemporaryItems/...` if the original path was temporary
+
+Use shell to search by:
+- basename prefix
+- nearby timestamp words
+- extension
+
+Example strategy for screenshots:
+
+```bash
+find ~/Desktop ~/Downloads -maxdepth 2 -type f \( -name 'Screenshot*.png' -o -name 'Screenshot*.jpg' \) | grep '2026-04-12 at 12'
+```
+
+If multiple candidates match, prefer:
+1. exact basename match
+2. same minute timestamp
+3. same directory as the original path
 
 ## For temporary macOS screenshot locations
 
-Paths under `/var/folders/.../TemporaryItems/...` are especially fragile. Copy them immediately if they still exist.
+Paths under `/var/folders/.../TemporaryItems/...` are especially fragile. Copy them immediately if they still exist. If they disappear, search Desktop/Downloads for a stable copy before asking the user again.
 
-## If copy fails
+## If copy still fails after fuzzy recovery
 
 Report exactly which file failed and why:
 - path missing
 - permission issue
 - source already deleted
+- no close match found
 
 Then ask the user for one of these:
 - upload directly in chat
 - move files into workspace `tmp/`
 - provide corrected path
+
+## Reliable shell patterns
+
+### Exact copy first
+
+```bash
+mkdir -p /Users/hectorvelasquez/.openclaw/workspace/tmp && \
+cp "/absolute/source/file.png" \
+   "/Users/hectorvelasquez/.openclaw/workspace/tmp/file.png"
+```
+
+### Fuzzy locate if exact path fails
+
+```bash
+find ~/Desktop ~/Downloads -maxdepth 2 -type f | grep 'Screenshot 2026-04-12 at 12'
+```
+
+### Copy all matched screenshots into workspace tmp
+
+```bash
+mkdir -p /Users/hectorvelasquez/.openclaw/workspace/tmp
+while IFS= read -r f; do
+  cp "$f" /Users/hectorvelasquez/.openclaw/workspace/tmp/
+done < <(find ~/Desktop ~/Downloads -maxdepth 2 -type f | grep 'Screenshot 2026-04-12 at 12')
+```
 
 ## Workspace rule for future skills
 
