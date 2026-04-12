@@ -74,13 +74,15 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 
 **Use the right model for the right task:**
 
-- **Heartbeats/Monitoring:** `openai-codex/gpt-5.4` (cost-effective for simple checks)
-- **Daily chat/questions:** `anthropic/claude-sonnet-4-6` (balanced quality/cost)
-- **Complex debugging:** `anthropic/claude-opus-4-6` (deep reasoning)
+- **Heartbeats/Monitoring:** `openai-codex/gpt-5.4` (default)
+- **Daily chat/questions:** `openai-codex/gpt-5.4` (default)
+- **Routine file edits:** `openai-codex/gpt-5.4` (default)
 - **Large codebase work:** `openai-codex/gpt-5.4` (1M context window)
-- **Architecture decisions:** `anthropic/claude-opus-4-6` (strategic thinking)
+- **Complex debugging:** `openai-codex/gpt-5.4` first, escalate only if explicitly requested
+- **Architecture decisions:** `openai-codex/gpt-5.4` first, escalate only if explicitly requested
+- **Claude Sonnet / Opus:** reserve for explicit manual override, benchmark, or when the user specifically asks for Claude
 
-**Cost optimization:** Avoid using Opus for routine tasks. Heartbeat model is set to Codex 5.4 to minimize token burn.
+**Cost optimization:** Codex 5.4 is the operational default. Do not proactively route to Anthropic for normal chat, architecture, or debugging unless the user explicitly wants that tradeoff.
 
 ## Safety
 

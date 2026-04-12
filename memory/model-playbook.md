@@ -10,12 +10,12 @@
 
 | Task | Best Model | Fallback | Why |
 |------|------------|----------|-----|
-| **Heartbeats/Monitoring** | `openai-codex/gpt-5.4` | `anthropic/claude-sonnet-4-6` | Simple checks, low cost |
-| **Chat/Questions** | `anthropic/claude-sonnet-4-6` | `openai-codex/gpt-5.4` | Balance quality/cost |
-| **Complex Debugging** | `anthropic/claude-opus-4-6` | `anthropic/claude-sonnet-4-6` | Deep reasoning needed |
+| **Heartbeats/Monitoring** | `openai-codex/gpt-5.4` | `openai-codex/gpt-5.4` | Simple checks, low cost |
+| **Chat/Questions** | `openai-codex/gpt-5.4` | `openai-codex/gpt-5.4` | Lowest operational cost |
+| **Complex Debugging** | `openai-codex/gpt-5.4` | `anthropic/claude-sonnet-4-6` | Start cheap, escalate only if needed |
 | **Large Codebase Work** | `openai-codex/gpt-5.4` | `anthropic/claude-opus-4-6` | 1M context window |
-| **Architecture Decisions** | `anthropic/claude-opus-4-6` | `anthropic/claude-sonnet-4-6` | Strategic thinking |
-| **Routine File Edits** | `openai-codex/gpt-5.4` | `anthropic/claude-sonnet-4-6` | Efficient execution |
+| **Architecture Decisions** | `openai-codex/gpt-5.4` | `anthropic/claude-sonnet-4-6` | Start in Codex, escalate manually |
+| **Routine File Edits** | `openai-codex/gpt-5.4` | `openai-codex/gpt-5.4` | Efficient execution |
 
 ### User Preferences (Hector-specific)
 - **Always ask for approval** before any code changes
@@ -83,14 +83,14 @@ Shell: ONLY for system commands requiring shell execution
 ## Model-Specific Adaptations
 
 ### When Using Claude Opus 4.6
-**Strengths:** Deep reasoning, complex debugging, architectural decisions  
-**Use for:** Strategic planning, difficult bugs, code reviews, security analysis  
-**Avoid for:** Routine edits, simple monitoring, repetitive tasks
+**Strengths:** Deep reasoning, difficult reviews, edge-case analysis  
+**Use for:** Explicit manual escalation only, benchmark comparisons, or when the user specifically asks for Opus  
+**Avoid for:** Routine edits, chat, monitoring, normal debugging, architecture by default
 
 ### When Using Claude Sonnet 4.6  
-**Strengths:** Balanced quality/speed, good for daily work  
-**Use for:** General development, moderate complexity tasks, most conversations  
-**Avoid for:** Extremely complex logic, very large context needs
+**Strengths:** Balanced quality/speed  
+**Use for:** Explicit manual escalation only, fallback after Codex for genuinely blocked reasoning tasks  
+**Avoid for:** Daily chat, default development flow, routine decisions
 
 ### When Using OpenAI Codex 5.4
 **Strengths:** 1M context, efficient execution, good coding patterns  
@@ -158,9 +158,10 @@ Shell: ONLY for system commands requiring shell execution
 ## Cost Optimization Rules
 
 1. **Heartbeat model** must be cheapest viable option (Codex 5.4)
-2. **Auto-save checkpoints** should use session-specific model, not always primary
+2. **Auto-save checkpoints** should use Codex unless there is an explicit override
 3. **Long-running tasks** prefer Codex 5.4 for context efficiency
-4. **Simple monitoring** never use Opus — Sonnet or Codex sufficient
+4. **Simple monitoring** never use Opus
+5. **Architecture and debugging** start in Codex, escalate to Claude only by explicit user choice or after a documented failed attempt in Codex
 
 ---
 
