@@ -16,6 +16,7 @@ Cuando el usuario dice "corre sprint nocturno de [feature]" o "mejora el cerebro
 1. **Feature name** — ej: "inventarios", "operacion", "reservaciones"
 2. **Duración máxima** — ej: "4 horas" (default: 4h)
 3. **Score target** — ej: "85% pass rate" (default: 80%)
+4. **Eval battery disponible** — `eval-battery.md` debe existir para el feature; si no existe, el sprint no arranca y debe reportar bloqueo
 
 ## Paso 0 — Preparación
 
@@ -26,8 +27,19 @@ Cuando el usuario dice "corre sprint nocturno de [feature]" o "mejora el cerebro
    - `eval-battery.md` — las preguntas de prueba con gold answers
    - `implementation-plan.md` — el plan de construcción
 
-2. Leer el código relevante del feature en el repo de growthsuite
-3. Registrar timestamp de inicio y score baseline
+2. Si `eval-battery.md` no existe:
+   - NO arrancar el sprint
+   - generar reporte corto de bloqueo
+   - indicar que primero hay que crear la batería con el protocolo del feature kickoff
+
+3. Leer el código relevante del feature en el repo de growthsuite
+4. Identificar primero dónde vive realmente la capacidad a mejorar:
+   - query layer
+   - pipeline routing / clasificación
+   - state / diagnosis
+   - prompt / instrucciones del dominio
+   - adapter/tooling auxiliar
+5. Registrar timestamp de inicio y score baseline
 
 ## Paso 1 — Evaluar (correr la battery)
 
@@ -46,48 +58,60 @@ Guardar resultados en: `features/[feature]/eval-results/sprint-[fecha].md`
 
 Para cada pregunta que falló:
 1. Identificar la causa raíz:
-   - **Falta tool** — el brain no tiene una herramienta para responder esto
-   - **Tool existe pero mal conectada** — el endpoint existe pero el brain no lo llama
-   - **Falta datos** — no hay datos en dev para probar
-   - **Prompt débil** — el system prompt no guía bien la respuesta
-   - **Routing incorrecto** — classify.ts o el intent router no clasifica bien
-   - **Safe degradation falta** — el brain inventa en vez de degradar
+   - **Falta datos** — no hay datos suficientes o confiables para probar/responder
+   - **Falta capacidad** — falta query, helper, ruta deterministic o adapter para responder esto
+   - **Routing incorrecto** — classify.ts, intent router o precedencia no clasifica bien
+   - **Safe degradation falta** — el brain inventa en vez de degradar útilmente
+   - **Prompt débil** — el prompt del dominio no guía bien la respuesta una vez que la capacidad ya existe
+   - **Capacidad existente mal conectada** — la query/adapter/tool existe pero el brain no la usa bien
 
 2. Agrupar fails por causa raíz
-3. Priorizar: las causas que arreglan más preguntas van primero
+3. Priorizar en este orden:
+   - datos
+   - capacidad/query
+   - routing/clasificación
+   - safe degradation
+   - prompt
+   - conexiones auxiliares
 
 ## Paso 3 — Mejorar (iterar)
 
 Para cada causa raíz, en orden de impacto:
 
-### Si falta tool:
-- Crear el tool en `pos_bot_api/app/brain/tools/` o en el pipeline relevante
-- El tool debe llamar a endpoints EXISTENTES (verificar en system-map.md)
-- NO crear endpoints nuevos en el backend
-- Agregar tests unitarios para el tool
-
-### Si tool mal conectada:
-- Verificar que el endpoint existe (curl de prueba)
-- Arreglar el import/routing en el pipeline
-- Verificar que el auth (JWT/kiosk) es correcto
-
 ### Si faltan datos:
-- Seedear datos en Fogo dev via API (curl con JWT admin)
-- Documentar qué datos se crearon
+- Preparar datos usando el mecanismo existente más seguro para ese feature
+- Opciones válidas: simulador, script, fixture, API existente, o estado dev/local ya disponible
+- NO inventar datos si eso distorsiona la evaluación
+- Documentar qué datos se prepararon y por qué
 
-### Si prompt débil:
-- Mejorar el system prompt del brain para este dominio
-- Agregar instrucciones específicas del feature
-- NO cambiar el prompt global — solo agregar prompt del dominio
+### Si falta capacidad:
+- Resolver con la pieza correcta según la arquitectura real:
+  - query
+  - helper
+  - ruta deterministic
+  - clasificación
+  - adapter/tool solo si realmente aplica
+- NO asumir que todo problema se resuelve con `app/brain/tools/`
+- NO crear endpoints nuevos en el backend
+- Agregar tests unitarios o validación equivalente para la capacidad añadida
 
 ### Si routing incorrecto:
-- Mejorar classify.ts o el intent router para este tipo de preguntas
-- Agregar keywords/patterns si es regex-based
-- Si es LLM-based, mejorar la descripción del tool
+- Mejorar classify.ts, intent router o precedencia para ese tipo de preguntas
+- Agregar patterns/subclases si aplica
+- Si hay LLM routing, mejorar descripción de la capacidad, no solo el wording
 
 ### Si safe degradation falta:
 - Agregar fallback que responda algo útil en vez de inventar
-- "No tengo esa información exacta, pero puedo decirte [X alternativa]"
+- Priorizar una alternativa operativa real, no una disculpa genérica
+
+### Si prompt débil:
+- Mejorar el prompt del dominio solo después de confirmar que datos, capacidad y routing ya existen
+- NO cambiar el prompt global salvo instrucción explícita
+
+### Si la capacidad existe pero está mal conectada:
+- Verificar que la query/adapter/tool/endpoint ya existe
+- Arreglar import, wiring o uso en el pipeline
+- Verificar auth y contexto si aplica
 
 ## Paso 4 — Re-evaluar
 
@@ -98,6 +122,14 @@ Después de cada mejora:
 4. Si score >= target → pasar a Paso 5
 5. Si score < target Y queda tiempo → volver a Paso 2
 6. Si score < target Y no queda tiempo → pasar a Paso 5 con lo que hay
+
+### Stop conditions (detener y reportar)
+- El siguiente fix requiere endpoint nuevo
+- El siguiente fix requiere schema change
+- Aparecen 2 regresiones fuertes seguidas
+- El score no es confiable por falta de datos
+- El problema ya es de producto/UX, no de implementación del brain
+- El feature docs contradicen el código real y falta definición humana
 
 ## Paso 5 — Reportar
 
