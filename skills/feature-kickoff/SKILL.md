@@ -20,6 +20,35 @@ Sin kickoff, Claude improvisa: adivina el schema, duplica helpers existentes, ro
 | `action-layer.md` | `references/template-action-layer.md` | Acciones exactas a implementar (inputs, outputs, side effects) |
 | `implementation-plan.md` | `references/template-implementation-plan.md` | Pasos ordenados, cada uno verificable, sin ambigüedad |
 
+## Sección obligatoria en implementation-plan.md: Brain Integration
+
+Cada `implementation-plan.md` debe incluir una sección **Brain Integration** al final (antes del checklist de commit). Esta sección conecta la feature con los tres cerebros del sistema y define el impacto medible.
+
+### Brain Integration
+
+#### Business Brain (estado del negocio)
+- Qué variables agrega al estado del restaurante (s_t)
+- Qué reglas de diagnóstico necesita
+- Qué insights puede generar
+
+#### Product Brain (conocimiento del producto)
+- Qué flujos procedimentales agrega
+- Qué preguntas "¿cómo hago X?" debe saber responder
+- Qué pantallas/pasos del panel debe conocer
+- Diferencia flujo WhatsApp vs Panel
+
+#### Action Brain (acciones)
+- Tools nuevos por nivel (A: consultar, B: sugerir, C: ejecutar seguro, D: sensible)
+- Qué output genera (insight, guía, acción)
+- Qué confirmaciones necesita
+
+#### Métricas de impacto
+- ΔJ (impacto en el negocio): qué mejora medible genera
+- ΔP (productividad): cuánto tiempo/esfuerzo ahorra
+- Cómo se mide (qué query/dato lo confirma)
+
+---
+
 ## Documentos recomendados (agregar si la feature lo amerita)
 
 | Doc | Cuándo incluir |

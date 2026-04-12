@@ -104,6 +104,40 @@ scripts/run-suite-v2.sh [restaurant_id] [phone] A
 
 ---
 
+## Brain Integration
+
+### Business Brain (estado del negocio)
+
+- **Variables que agrega a s_t:** [ej: `reservas_pendientes`, `tasa_cancelacion_hoy`]
+- **Reglas de diagnóstico:** [ej: "si reservas_pendientes > capacidad × 0.9 → alerta ocupación"]
+- **Insights que puede generar:** [ej: "Tienes 3 mesas sin confirmar para las 8pm"]
+
+### Product Brain (conocimiento del producto)
+
+- **Flujos procedimentales nuevos:** [ej: "Crear reserva desde WhatsApp: paso 1…"]
+- **Preguntas ¿cómo hago X? que debe saber responder:** [ej: "¿Cómo bloqueo una mesa?", "¿Cómo cancelo una reserva?"]
+- **Pantallas/pasos del panel que debe conocer:** [ej: "Panel → Reservaciones → Nueva Reserva → campos X, Y, Z"]
+- **Diferencia flujo WhatsApp vs Panel:** [ej: "WhatsApp: confirmación vía mensaje. Panel: confirmación visual en grid"]
+
+### Action Brain (acciones)
+
+| Tool | Nivel | Output | Confirmación requerida |
+|---|---|---|---|
+| `[tool_name]` | A / B / C / D | insight / guía / acción | sí / no |
+
+- **Nivel A — consultar:** lectura pura, sin side effects
+- **Nivel B — sugerir:** propone pero no ejecuta
+- **Nivel C — ejecutar seguro:** escribe datos, reversible fácilmente
+- **Nivel D — sensible:** toca dinero / inventario / cancelaciones — requiere confirmación explícita
+
+### Métricas de impacto
+
+- **ΔJ (impacto en el negocio):** [ej: "Reduce no-shows en ~15% con confirmación automática"]
+- **ΔP (productividad):** [ej: "Ahorra ~20min/día al hostess en confirmaciones manuales"]
+- **Cómo se mide:** [ej: `SELECT COUNT(*) FROM reservations WHERE status='no_show' GROUP BY week`]
+
+---
+
 ## Checklist antes del commit
 
 - [ ] `node ace build` pasa sin errores
