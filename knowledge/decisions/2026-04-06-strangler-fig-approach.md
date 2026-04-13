@@ -1,3 +1,7 @@
+---
+tags: [decision, growthsuite, bot, migration]
+---
+
 # Decision: Strangler Fig para migrar el bot de GrowthSuite
 
 **Fecha:** 2026-04-06

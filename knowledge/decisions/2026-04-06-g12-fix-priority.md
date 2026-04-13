@@ -1,3 +1,7 @@
+---
+tags: [decision, growthsuite, bot, bugfix]
+---
+
 # Decision: G12 cross-tenant leak es P0 del bot
 
 **Fecha:** 2026-04-06

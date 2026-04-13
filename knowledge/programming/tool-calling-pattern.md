@@ -1,3 +1,7 @@
+---
+tags: [programming, ai, tool-calling, patterns]
+---
+
 # Pattern: Tool-Calling Nativo vs Keyword Routing
 
 > Copia consolidada del patron para referencia rapida.

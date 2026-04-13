@@ -1,3 +1,7 @@
+---
+tags: [decision, openclaw, setup, feedback]
+---
+
 # Decision: Setup del knowledge hub — feedback de Codex incorporado
 
 **Fecha:** 2026-04-06

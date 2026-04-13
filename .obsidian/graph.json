@@ -1,12 +1,76 @@
 {
   "collapse-filter": true,
   "search": "",
-  "showTags": false,
+  "showTags": true,
   "showAttachments": false,
   "hideUnresolved": false,
   "showOrphans": true,
-  "collapse-color-groups": true,
-  "colorGroups": [],
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:projects/growthsuite",
+      "color": {
+        "a": 1,
+        "rgb": 3394611
+      }
+    },
+    {
+      "query": "path:projects/impulso",
+      "color": {
+        "a": 1,
+        "rgb": 16761095
+      }
+    },
+    {
+      "query": "path:knowledge/programming OR path:knowledge/agent-patterns",
+      "color": {
+        "a": 1,
+        "rgb": 4456703
+      }
+    },
+    {
+      "query": "path:knowledge/architecture",
+      "color": {
+        "a": 1,
+        "rgb": 3394611
+      }
+    },
+    {
+      "query": "path:knowledge/decisions",
+      "color": {
+        "a": 1,
+        "rgb": 10040268
+      }
+    },
+    {
+      "query": "path:knowledge/claude-code-internals OR path:knowledge/claude-rules",
+      "color": {
+        "a": 1,
+        "rgb": 8947967
+      }
+    },
+    {
+      "query": "path:skills",
+      "color": {
+        "a": 1,
+        "rgb": 16744448
+      }
+    },
+    {
+      "query": "path:memory",
+      "color": {
+        "a": 1,
+        "rgb": 8421504
+      }
+    },
+    {
+      "query": "path:notes OR path:notas",
+      "color": {
+        "a": 1,
+        "rgb": 6710886
+      }
+    }
+  ],
   "collapse-display": true,
   "showArrow": false,
   "textFadeMultiplier": 0,
@@ -17,6 +81,6 @@
   "repelStrength": 10,
   "linkStrength": 1,
   "linkDistance": 250,
-  "scale": 0.20339012193862477,
+  "scale": 0.19426059101417942,
   "close": true
 }

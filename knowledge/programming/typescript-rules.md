@@ -1,3 +1,7 @@
+---
+tags: [programming, typescript, rules]
+---
+
 # Reglas de TypeScript
 
 > Aplican a todo proyecto TypeScript en GrowthSuite (backend y frontend).

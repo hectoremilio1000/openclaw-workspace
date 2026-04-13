@@ -19,9 +19,10 @@ Bienvenido al vault. Esto es tu segundo cerebro compartido con tu agente de IA.
 - AGENTS.md, SOUL.md, USER.md, TOOLS.md, HEARTBEAT.md — Config del agente
 - .obsidian/ — Config de Obsidian
 
-## 🚀 Proyecto activo
+## 🚀 Proyectos activos
 
-- **[[projects/growthsuite/growthsuite-roles-document|GrowthSuite POS]]** — Sistema POS para restaurantes
+- **[[projects/growthsuite/current-state|GrowthSuite POS]]** — Sistema POS + cerebro IA para restaurantes
+- **[[projects/impulso/current-state|Impulso Restaurantero]]** — Website + marketing + lead gen para restauranteros
 
 ## 💡 Tips
 

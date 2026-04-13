@@ -1,3 +1,7 @@
+---
+tags: [patterns, ai, tool-calling, routing]
+---
+
 # Pattern: Tool-Calling nativo vs Keyword Routing
 
 > **Cuándo usar:** cuando tienes un agente LLM que debe decidir qué acción ejecutar basándose en input de lenguaje natural.

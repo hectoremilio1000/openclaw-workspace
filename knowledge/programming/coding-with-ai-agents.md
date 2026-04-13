@@ -1,3 +1,7 @@
+---
+tags: [programming, ai, agents, best-practices]
+---
+
 # Como Programar con Agentes IA
 
 > Reglas destiladas de meses trabajando con Claude Code y Codex en produccion.

@@ -1,3 +1,7 @@
+---
+tags: [growthsuite, architecture, cerebro, roadmap]
+---
+
 # GrowthSuite — Roadmap del Cerebro v1
 
 > **Proposito:** Documento maestro que guia TODA decision de codigo (front o back).

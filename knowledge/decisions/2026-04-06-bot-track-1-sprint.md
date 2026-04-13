@@ -1,3 +1,7 @@
+---
+tags: [decision, growthsuite, bot, sprint]
+---
+
 # Decision: Sprint Track 1 del bot (3 semanas, 11 tickets)
 
 **Fecha:** 2026-04-06

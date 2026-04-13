@@ -1,3 +1,7 @@
+---
+tags: [decision, openclaw, sync, storage]
+---
+
 # Decision: Channel sync personal vive en OpenClaw, no en GrowthSuite
 
 - **Fecha:** 2026-04-10

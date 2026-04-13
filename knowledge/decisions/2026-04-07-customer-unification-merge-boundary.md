@@ -1,3 +1,7 @@
+---
+tags: [decision, growthsuite, customers, data]
+---
+
 # Decision: Customer unification merged to dev/main, but treat it as core POS foundation — not the brain
 
 **Fecha:** 2026-04-07

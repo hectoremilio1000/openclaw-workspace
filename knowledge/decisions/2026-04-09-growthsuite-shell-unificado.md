@@ -1,3 +1,7 @@
+---
+tags: [decision, growthsuite, frontend, shell]
+---
+
 # Decision: GrowthSuite pasa a Shell Unificado
 
 - **Fecha:** 2026-04-09

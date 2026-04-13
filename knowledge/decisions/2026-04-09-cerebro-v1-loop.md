@@ -1,3 +1,7 @@
+---
+tags: [decision, growthsuite, cerebro, architecture]
+---
+
 # Decision: El cerebro usa el loop datos→estado→diagnostico→respuesta→impacto
 
 - **Fecha:** 2026-04-09

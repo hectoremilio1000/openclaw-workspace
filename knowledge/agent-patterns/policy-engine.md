@@ -1,3 +1,7 @@
+---
+tags: [patterns, security, policy-engine, architecture]
+---
+
 # Pattern: Policy Engine (Separación Razonamiento / Control / Ejecución / Aprendizaje)
 
 > **Cuándo usar:** cuando un agente LLM toma decisiones que afectan dinero, inventario, datos de clientes, o cualquier estado crítico.

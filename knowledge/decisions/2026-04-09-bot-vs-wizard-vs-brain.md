@@ -1,3 +1,7 @@
+---
+tags: [decision, growthsuite, bot, cerebro]
+---
+
 # Decision: Separar consultas (brain) de acciones (wizard) de reportes (bot actual)
 
 - **Fecha:** 2026-04-09

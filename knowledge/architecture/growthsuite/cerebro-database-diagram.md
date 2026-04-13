@@ -1,3 +1,7 @@
+---
+tags: [growthsuite, architecture, cerebro, database]
+---
+
 # GrowthSuite Cerebro — Diagrama de Base de Datos
 
 > Como leer este diagrama: Las tablas VERDES ya existen. Las AMARILLAS son NUEVAS (hay que crearlas).

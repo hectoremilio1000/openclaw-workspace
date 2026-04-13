@@ -1,3 +1,7 @@
+---
+tags: [patterns, migration, strangler-fig, architecture]
+---
+
 # Pattern: Strangler Fig Migration
 
 > **Cuándo usar:** refactorizar sistemas en producción sin downtime, sin regresiones masivas, sin "big bang" rewrite.

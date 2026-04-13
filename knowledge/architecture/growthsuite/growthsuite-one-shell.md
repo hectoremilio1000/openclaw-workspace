@@ -1,3 +1,7 @@
+---
+tags: [growthsuite, architecture, frontend, shell]
+---
+
 # GrowthSuite One — Shell Unificado
 
 > **Proposito:** Definir como se ve y funciona GrowthSuite como un solo producto operativo.

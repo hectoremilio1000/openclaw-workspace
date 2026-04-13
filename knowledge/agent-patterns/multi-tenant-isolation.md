@@ -1,3 +1,7 @@
+---
+tags: [patterns, security, multi-tenant, architecture]
+---
+
 # Pattern: Multi-Tenant Isolation en agentes LLM
 
 > **Cuándo usar:** siempre que un agente LLM sirva a múltiples tenants/clientes/organizaciones que NO deben ver datos unos de otros.
