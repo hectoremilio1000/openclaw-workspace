@@ -1,5 +1,25 @@
 # Fogo Simulator Errors
 
+## 2026-04-12 22:00 America/Mexico_City
+
+### PRODUCTION
+- Command: `cd /Users/hectorvelasquez/.openclaw/workspace/scripts && NODE_PATH=/tmp/node_modules node fogo-simulator.mjs`
+- Error: `duplicate key value violates unique constraint "shift_totals_pkey"`
+- PostgreSQL code: `23505`
+- Failing detail: `Key (shift_id, payment_method_id)=(118216, 1) already exists.`
+- Stack top:
+  - `phaseClose (fogo-simulator.mjs:604:5)`
+  - `main (fogo-simulator.mjs:1050:25)`
+
+### DEV
+- Command: `cd /Users/hectorvelasquez/.openclaw/workspace/scripts && NODE_PATH=/tmp/node_modules node fogo-simulator.mjs --dev`
+- Error: `duplicate key value violates unique constraint "shift_totals_pkey"`
+- PostgreSQL code: `23505`
+- Failing detail: `Key (shift_id, payment_method_id)=(29, 10) already exists.`
+- Stack top:
+  - `phaseClose (fogo-simulator.mjs:604:5)`
+  - `main (fogo-simulator.mjs:1050:25)`
+
 ## 2026-04-11 22:00 America/Mexico_City
 
 ### PRODUCTION
