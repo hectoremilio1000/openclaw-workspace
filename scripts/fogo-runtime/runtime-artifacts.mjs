@@ -13,6 +13,7 @@ export function createRuntimeTracker({ envLabel, envProfile, phase, restaurantId
     restaurantId,
     startedAt,
     plan,
+    verification: null,
     steps: [],
     totals: {
       orders: 0,
@@ -29,6 +30,10 @@ export function createRuntimeTracker({ envLabel, envProfile, phase, restaurantId
       inventoryWaste: 0,
     },
   }
+}
+
+export function setRuntimeVerification(tracker, verification) {
+  tracker.verification = verification
 }
 
 export function recordRuntimeStep(tracker, name, data = {}) {
@@ -61,6 +66,7 @@ export function writeRuntimeArtifact({ outputDir, tracker, status = 'ok', error 
     startedAt: tracker.startedAt,
     finishedAt,
     plan: tracker.plan,
+    verification: tracker.verification,
     totals: {
       ...tracker.totals,
       revenue: Math.round(tracker.totals.revenue * 100) / 100,

@@ -88,6 +88,21 @@ It should:
 
 It should **not** try to finish the full validator/evaluator in the same step.
 
+## Phase B scope
+
+Phase B adds a first useful `consistency-verifier`.
+
+It should validate at least:
+- open shift expectations by phase
+- closed shifts without leaked open orders
+- obviously impossible settled payments
+- attendance presence when there are orders
+- check-in/check-out balance sanity
+- inventory negative-balance warnings
+- expected vs observed sales/order ranges
+
+The verifier should not silently fail. Its result must land in the runtime artifact as machine-readable `ok/issues/warnings`.
+
 ---
 
 ## Artifacts
