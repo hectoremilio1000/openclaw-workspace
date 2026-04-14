@@ -103,6 +103,12 @@ It should validate at least:
 
 The verifier should not silently fail. Its result must land in the runtime artifact as machine-readable `ok/issues/warnings`.
 
+It should separate two different signals:
+- `runConsistency`: what this exact execution created or failed to create
+- `dayHealth`: the accumulated health of the restaurant day after the run
+
+Do not mix these two. Otherwise repeated runs create noisy false alarms for expected-vs-observed checks.
+
 ---
 
 ## Artifacts
