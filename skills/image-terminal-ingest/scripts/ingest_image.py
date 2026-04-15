@@ -4,6 +4,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import unicodedata
 from pathlib import Path
 from typing import Iterable, Optional
@@ -15,6 +16,9 @@ SEARCH_DIRS = [
     Path.home() / "Downloads",
     Path("/tmp"),
 ]
+
+TEMP_RETRY_ATTEMPTS = 12
+TEMP_RETRY_SLEEP = 0.15
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tiff"}
 
@@ -87,6 +91,20 @@ def score_candidate(source: Path, candidate: Path) -> int:
     return score
 
 
+def existing_parent_roots(src: Path) -> list[Path]:
+    roots: list[Path] = []
+    seen: set[Path] = set()
+    for parent in [src.parent, *src.parents]:
+        if parent in seen:
+            continue
+        seen.add(parent)
+        if parent.exists() and parent.is_dir():
+            roots.append(parent)
+        if normalize_text(str(parent)).endswith('/t') or parent.name == 'T':
+            break
+    return roots
+
+
 def find_candidates(source: str) -> list[Path]:
     src = Path(source)
     base = src.name
@@ -94,8 +112,7 @@ def find_candidates(source: str) -> list[Path]:
 
     candidates: list[Path] = []
     search_roots: list[Path] = []
-    if src.parent.exists():
-        search_roots.append(src.parent)
+    search_roots.extend(existing_parent_roots(src))
     search_roots.extend([p for p in SEARCH_DIRS if p.exists()])
 
     seen: set[Path] = set()
@@ -123,8 +140,23 @@ def find_candidates(source: str) -> list[Path]:
     return candidates
 
 
+def wait_for_temp_source(src: Path) -> Optional[Path]:
+    src_text = normalize_text(str(src))
+    if '/temporaryitems/' not in src_text and 'nsird_screencaptureui_' not in src_text:
+        return src if src.exists() and src.is_file() else None
+
+    for _ in range(TEMP_RETRY_ATTEMPTS):
+        if src.exists() and src.is_file():
+            return src
+        time.sleep(TEMP_RETRY_SLEEP)
+    return None
+
+
 def choose_candidate(source: str) -> Optional[Path]:
     src = Path(source)
+    exact = wait_for_temp_source(src)
+    if exact is not None:
+        return exact
     if src.exists() and src.is_file():
         return src
     candidates = find_candidates(source)
