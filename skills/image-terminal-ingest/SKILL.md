@@ -7,6 +7,8 @@ description: "Use when the user provides an image attachment or local image path
 
 Use this skill when the user wants to work with an image from the terminal or pasted a local image path that should become stable and shell-friendly.
 
+This skill includes a deterministic helper at `scripts/ingest_image.py` and should prefer that helper over ad-hoc shell when possible.
+
 ## Goal
 
 Turn a fragile or awkward image source into a stable local copy at:
@@ -71,14 +73,23 @@ Example:
    - `~/Downloads`
    - `/tmp`
 
-8. Inspect the copied image with available tools:
+8. Prefer the bundled helper script for exact copy, fuzzy recovery, safe destination naming, metadata, and optional OCR.
+
+```bash
+python3 /Users/hectorvelasquez/.openclaw/workspace/skills/image-terminal-ingest/scripts/ingest_image.py \
+  "/original/path/image.png" \
+  --dest-dir /tmp/codex-images \
+  --name screenshot-2026-04-14-2347.png
+```
+
+9. Inspect the copied image with available tools:
    - `file <path>`
    - `sips -g pixelWidth -g pixelHeight <path>` on macOS
    - `tesseract <path> stdout` if installed and OCR is useful
 
-9. If OCR is unavailable or weak, use visual inspection on the copied image.
+10. If OCR is unavailable or weak, use visual inspection on the copied image.
 
-10. Return the real outcome honestly.
+11. Return the real outcome honestly.
 
 ## Shell patterns
 
@@ -104,6 +115,15 @@ cp "/original/path/image.png" "$dst"
 
 ```bash
 find ~/Desktop ~/Downloads /tmp -type f \( -name 'Screenshot*.png' -o -name 'Screenshot*.jpg' \) | grep '2026-04-14 at 11.47'
+```
+
+### Preferred helper invocation
+
+```bash
+python3 /Users/hectorvelasquez/.openclaw/workspace/skills/image-terminal-ingest/scripts/ingest_image.py \
+  "/original/path/image.png" \
+  --dest-dir /tmp/codex-images \
+  --name screenshot-2026-04-14-2347.png
 ```
 
 ### Metadata inspection
@@ -136,3 +156,4 @@ Always return:
 - Do not delete originals
 - Prefer recoverable, transparent actions
 - For very fragile `/var/folders/.../NSIRD_screencaptureui_*` paths, try copy immediately after approval because they may vanish within seconds
+- This skill improves success rate, but cannot resurrect a temp file that macOS already deleted before the helper runs
