@@ -153,7 +153,18 @@ Acciones donde keywords no alcanzan: "aplica un descuentito a la 3" tiene demasi
 
 ### Principio: NO reescribir las actions. Llamarlas desde el brain.
 
-> **Timeline realista:** las actions no son iguales. Dividir en simples (1-2 pasos, lectura) y complejas (multi-turn, state machine, tocan dinero). 1 día para 4 simples, 1 día para 4 complejas, 2-3 días para testing y regression. Total: 7-8 días.
+> **Timeline realista:** las actions no son iguales. Dividir por tiers (sin params / params simples / multi-turn). Total: 7-8 días.
+
+### 3.0 — Action schemas (PREPARATORIO — ya completado)
+
+- `app/brain/actions/action_schemas.ts` define los 11 schemas reales (CLAUDE.md decía 14 — era conteo viejo)
+- Tiers:
+  - **Tier 1** (sin params, ejecución directa): `xcut_flow`, `stock_status_flow`, `close_shift_flow`
+  - **Tier 2** (params simples, LLM extrae o pregunta una vez): `apply_discount_flow`, `cancel_flow`, `reopen_flow`, `late_arrivals_flow`, `supplies_purchases_flow`
+  - **Tier 3** (multi-turn complejo): `generate_supplier_order_flow`, `purchase_suggestions_flow`, `sales_comparison_flow`
+- `toToolDefinitions()` convierte schemas Tier 2/3 en tool definitions para `chatLLMWithTools`
+- Parámetros extraídos del código real — ninguno inventado
+- **Status:** ✅ commiteado en `dev`, build limpio
 
 ### 3.1 — Brain detecta intención de acción → delega a action registry
 - El brain (Capa 3, tool_use) detecta "aplica 10% mesa 3" → tool: apply_discount
@@ -172,36 +183,51 @@ Acciones donde keywords no alcanzan: "aplica un descuentito a la 3" tiene demasi
 - **Test 3.2:** "aplica 10%" → "¿a qué mesa?" → "mesa 3" → "¿confirmas?" → "sí" → hecho ✅
 - **Commit:** `feat(brain): multi-turn action state via activeActions`
 
-### 3.3 — Día 1: Actions simples (4 acciones, ~1 día)
-Actions de lectura o 1-2 pasos sin state machine compleja:
-1. `late_arrivals_report` — solo lectura
-2. `stock_status_report` — solo lectura
-3. `supplies_purchases_report` — solo lectura
-4. `xcut_report` — solo lectura
+### 3.3 — Tier 1: actions sin parámetros (1 día)
+
+Actions de ejecución directa — el brain las detecta con keywords y ejecuta sin extraer params:
+
+1. `xcut_flow` — corte X del último turno cerrado
+2. `close_shift_flow` — cierre de turno (pide confirmación, pero sin params)
+3. `stock_status_flow` — estado del inventario (warehouseId es opcional)
 
 Para CADA action:
-- Verificar que el brain la detecta (Capa 3 tool_use)
+- Verificar que el brain la detecta vía triggerPatterns (Capa 1 o Capa 2 del router, sin LLM)
 - Verificar que delega al handler existente
+- `close_shift_flow`: verificar que pide confirmación antes de ejecutar
 - Si algo falla → fix puntual, no reescritura
 - **Commits:** uno por action migrada
 
-### 3.4 — Día 2: Actions complejas (4 acciones, ~1 día)
-Actions multi-turn o que tocan dinero/inventario:
-1. `apply_discount` — confirmar antes de aplicar
-2. `cancel_product` — confirmar antes de cancelar
-3. `close_shift` — state machine, tocan contabilidad
-4. `reopen_order` — state crítico
+### 3.4 — Tier 2: actions con parámetros simples (2 días)
+
+Actions donde el LLM extrae 1-2 params del texto, o pregunta si faltan:
+
+1. `apply_discount_flow` — tableName + discountType + discountValue (Capa 3 tool_use)
+2. `cancel_flow` — tableName + productName (Capa 3 tool_use)
+3. `reopen_flow` — tableName (Capa 3 tool_use)
+4. `late_arrivals_flow` — dateFrom/dateTo opcionales (Capa 2 keywords + date parser)
+5. `supplies_purchases_flow` — dateFrom/dateTo opcionales (Capa 2 keywords + date parser)
 
 Para CADA action:
-- Verificar detección, delegación y state machine multi-turn
+- Verificar detección vía `toToolDefinitions()` schemas
+- Verificar que el LLM extrae parámetros correctamente del texto
+- Verificar que pregunta el param faltante si es requerido (state machine awaiting_*)
+- Verificar confirmación donde `requiresConfirmation: true`
 - Si algo falla → fix puntual, no reescritura
 - **Commits:** uno por action migrada
 
-### 3.5 — Días 3-5: Acciones restantes + testing (2-3 días)
-- `generate_supplier_order` — crea pero no envía
-- `purchase_suggestions` — sugiere solo
-- `sales_comparison_report` — lectura comparativa
-- Actions 12-14 restantes
+### 3.5 — Tier 3: actions multi-turn complejas (3-4 días)
+
+Actions con state machine de varios pasos o lógica de conversación no trivial:
+
+1. `generate_supplier_order_flow` — necesita supplierName; si no está en texto, pregunta
+2. `purchase_suggestions_flow` — filtros opcionales de marketCode/threshold vía LLM
+3. `sales_comparison_flow` — dos períodos a comparar, LLM parsea períodos ambiguos
+
+Para CADA action:
+- Verificar detección (Capa 3 tool_use con schemas de 3.0)
+- Verificar extracción de parámetros complejos
+- Verificar flujo multi-turn (el usuario puede dar datos en varios mensajes)
 - Regression de TODAS las actions con suite de 20+ mensajes
 - Score mínimo: 85%
 - **Commits:** uno por action + commit de regression
