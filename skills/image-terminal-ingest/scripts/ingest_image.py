@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-import os
 import re
 import shutil
 import subprocess
@@ -27,14 +26,69 @@ def slugify(value: str) -> str:
     return value or "image"
 
 
+def normalize_text(value: str) -> str:
+    return unicodedata.normalize("NFKC", value).lower()
+
+
+def extract_screenshot_signature(value: str) -> tuple[Optional[str], Optional[str]]:
+    normalized = normalize_text(value)
+    m = re.search(
+        r"screenshot\s+(\d{4}-\d{2}-\d{2})\s+at\s+(\d{1,2})\.(\d{2})(?:\.(\d{2}))?",
+        normalized,
+    )
+    if not m:
+        return None, None
+    date_part = m.group(1)
+    hh = int(m.group(2))
+    mm = m.group(3)
+    ss = m.group(4) or None
+    return date_part, f"{hh:02d}.{mm}" + (f".{ss}" if ss else "")
+
+
+def score_candidate(source: Path, candidate: Path) -> int:
+    src_name = normalize_text(source.name)
+    cand_name = normalize_text(candidate.name)
+    score = 0
+
+    if src_name == cand_name:
+        return 1000
+
+    src_date, src_time = extract_screenshot_signature(source.name)
+    cand_date, cand_time = extract_screenshot_signature(candidate.name)
+
+    if src_date and cand_date:
+        if src_date != cand_date:
+            return -1
+        score += 200
+    elif src_date or cand_date:
+        return -1
+
+    if src_time and cand_time:
+        if src_time == cand_time:
+            score += 500
+        elif src_time[:5] == cand_time[:5]:
+            score += 300
+        else:
+            return -1
+
+    src_stem = normalize_text(source.stem)
+    cand_stem = normalize_text(candidate.stem)
+    tokens = [t for t in re.split(r"[^\w]+", src_stem) if len(t) >= 4]
+    overlap = sum(1 for t in tokens if t in cand_stem)
+    score += overlap * 25
+
+    if candidate.parent == source.parent:
+        score += 30
+    if "temporaryitems" in normalize_text(str(source.parent)) and candidate.parent == Path.home() / "Desktop":
+        score += 10
+
+    return score
+
+
 def find_candidates(source: str) -> list[Path]:
     src = Path(source)
     base = src.name
-    stem = src.stem
     ext = src.suffix.lower()
-
-    tokens = [t for t in re.split(r"[^\w]+", stem) if t]
-    strong_tokens = [t for t in tokens if len(t) >= 4]
 
     candidates: list[Path] = []
     search_roots: list[Path] = []
@@ -50,19 +104,20 @@ def find_candidates(source: str) -> list[Path]:
                     continue
                 if ext and path.suffix.lower() != ext:
                     continue
+                if path in seen:
+                    continue
                 name = path.name
                 if name == base:
-                    if path not in seen:
-                        candidates.append(path)
-                        seen.add(path)
+                    candidates.append(path)
+                    seen.add(path)
                     continue
-                hay = unicodedata.normalize("NFKC", name).lower()
-                if all(tok.lower() in hay for tok in strong_tokens[:3]):
-                    if path not in seen:
-                        candidates.append(path)
-                        seen.add(path)
+                score = score_candidate(src, path)
+                if score >= 250:
+                    candidates.append(path)
+                    seen.add(path)
         except Exception:
             continue
+    candidates.sort(key=lambda p: score_candidate(src, p), reverse=True)
     return candidates
 
 
@@ -73,11 +128,10 @@ def choose_candidate(source: str) -> Optional[Path]:
     candidates = find_candidates(source)
     if not candidates:
         return None
-    base = src.name
-    for c in candidates:
-        if c.name == base:
-            return c
-    return candidates[0]
+    best = candidates[0]
+    if score_candidate(src, best) < 250:
+        return None
+    return best
 
 
 def unique_destination(dest_dir: Path, desired_name: str) -> Path:
