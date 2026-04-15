@@ -8,6 +8,8 @@ import unicodedata
 from pathlib import Path
 from typing import Iterable, Optional
 
+WORKSPACE_TMP = Path("/Users/hectorvelasquez/.openclaw/workspace/tmp")
+
 SEARCH_DIRS = [
     Path.home() / "Desktop",
     Path.home() / "Downloads",
@@ -146,6 +148,16 @@ def unique_destination(dest_dir: Path, desired_name: str) -> Path:
     return target
 
 
+def build_alias_name(chosen: Path, alias: Optional[str]) -> str:
+    ext = chosen.suffix.lower()
+    if alias:
+        alias = slugify(alias)
+        if not alias.endswith(ext):
+            alias += ext
+        return alias
+    return slugify(chosen.stem) + ext
+
+
 def inspect(path: Path) -> dict:
     result = {"file": None, "dimensions": None, "ocr": None}
     try:
@@ -178,6 +190,8 @@ def main(argv: Iterable[str]) -> int:
     parser.add_argument("source")
     parser.add_argument("--dest-dir", default="/tmp/codex-images")
     parser.add_argument("--name", default=None)
+    parser.add_argument("--workspace-mirror-dir", default=str(WORKSPACE_TMP))
+    parser.add_argument("--alias", default=None)
     args = parser.parse_args(list(argv))
 
     source = args.source
@@ -195,12 +209,21 @@ def main(argv: Iterable[str]) -> int:
     if not desired.endswith(ext):
         desired += ext
 
+    alias_name = build_alias_name(chosen, args.alias)
     dest = unique_destination(Path(args.dest_dir), desired)
     shutil.copy2(chosen, dest)
+
+    workspace_mirror_dir = Path(args.workspace_mirror_dir)
+    workspace_dest = unique_destination(workspace_mirror_dir, alias_name)
+    shutil.copy2(dest, workspace_dest)
+
     meta = inspect(dest)
 
     print(f"SOURCE={chosen}")
     print(f"COPIED={dest}")
+    print(f"WORKSPACE_MIRROR={workspace_dest}")
+    print(f"ALIAS={workspace_dest.name}")
+    print(f"TERMINAL_COMMAND=open {dest}")
     print(f"FILE={meta['file'] or ''}")
     print(f"DIMENSIONS={meta['dimensions'] or ''}")
     if meta.get("ocr"):

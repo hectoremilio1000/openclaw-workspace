@@ -9,6 +9,8 @@ Use this skill when the user wants to work with an image from the terminal or pa
 
 This skill includes a deterministic helper at `scripts/ingest_image.py` and should prefer that helper over ad-hoc shell when possible.
 
+If the user wants a flow that feels like pasted images in chat, use alias-style names such as `image-1`, `image-2`, or `image-9`, and rely on the workspace mirror for image analysis.
+
 ## Goal
 
 Turn a fragile or awkward image source into a stable local copy at:
@@ -17,8 +19,16 @@ Turn a fragile or awkward image source into a stable local copy at:
 /tmp/codex-images/
 ```
 
+And also create a workspace mirror at:
+
+```text
+/Users/hectorvelasquez/.openclaw/workspace/tmp/
+```
+
 Then return:
 - copied absolute path
+- workspace mirror path
+- alias-like filename when helpful
 - terminal-ready commands
 - file metadata
 - OCR text if available
@@ -73,13 +83,14 @@ Example:
    - `~/Downloads`
    - `/tmp`
 
-8. Prefer the bundled helper script for exact copy, fuzzy recovery, safe destination naming, metadata, and optional OCR.
+8. Prefer the bundled helper script for exact copy, fuzzy recovery, safe destination naming, workspace mirroring, metadata, and optional OCR.
 
 ```bash
 python3 /Users/hectorvelasquez/.openclaw/workspace/skills/image-terminal-ingest/scripts/ingest_image.py \
   "/original/path/image.png" \
   --dest-dir /tmp/codex-images \
-  --name screenshot-2026-04-14-2347.png
+  --name screenshot-2026-04-14-2347.png \
+  --alias image-9
 ```
 
 9. Inspect the copied image with available tools:
@@ -123,8 +134,11 @@ find ~/Desktop ~/Downloads /tmp -type f \( -name 'Screenshot*.png' -o -name 'Scr
 python3 /Users/hectorvelasquez/.openclaw/workspace/skills/image-terminal-ingest/scripts/ingest_image.py \
   "/original/path/image.png" \
   --dest-dir /tmp/codex-images \
-  --name screenshot-2026-04-14-2347.png
+  --name screenshot-2026-04-14-2347.png \
+  --alias image-9
 ```
+
+The helper returns both the stable shell path and a workspace mirror path that image tools can read.
 
 ### Metadata inspection
 
@@ -144,6 +158,8 @@ tesseract /tmp/codex-images/screenshot-2026-04-14-2347.png stdout
 Always return:
 - source path used
 - copied absolute path
+- workspace mirror path
+- alias used, if any
 - at least one terminal-ready command
 - file type and dimensions if available
 - OCR text or a brief visual summary
@@ -157,3 +173,4 @@ Always return:
 - Prefer recoverable, transparent actions
 - For very fragile `/var/folders/.../NSIRD_screencaptureui_*` paths, try copy immediately after approval because they may vanish within seconds
 - This skill improves success rate, but cannot resurrect a temp file that macOS already deleted before the helper runs
+- For TUI/native paste parity notes, see `references/tui-paste-gap.md`
