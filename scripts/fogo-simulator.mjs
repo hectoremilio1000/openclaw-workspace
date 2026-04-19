@@ -145,6 +145,96 @@ function phaseResult(name, extra = {}) {
   return { name, ...extra }
 }
 
+function ensureDir(path) {
+  fs.mkdirSync(path, { recursive: true })
+}
+
+function simulatorStatePath() {
+  return join(RUNTIME_ARTIFACT_DIR, 'state', `${ENV_PROFILE}-r${RESTAURANT_ID}.json`)
+}
+
+function loadSimulatorState() {
+  const path = simulatorStatePath()
+  if (!fs.existsSync(path)) {
+    return {
+      envProfile: ENV_PROFILE,
+      restaurantId: RESTAURANT_ID,
+      days: {},
+    }
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(path, 'utf8'))
+    return {
+      envProfile: parsed.envProfile || ENV_PROFILE,
+      restaurantId: parsed.restaurantId || RESTAURANT_ID,
+      days: parsed.days || {},
+    }
+  } catch (error) {
+    console.warn(`  ⚠️ Could not parse simulator state, resetting: ${error.message}`)
+    return {
+      envProfile: ENV_PROFILE,
+      restaurantId: RESTAURANT_ID,
+      days: {},
+    }
+  }
+}
+
+function saveSimulatorState(state) {
+  const path = simulatorStatePath()
+  ensureDir(dirname(path))
+  fs.writeFileSync(path, JSON.stringify({
+    envProfile: state.envProfile || ENV_PROFILE,
+    restaurantId: state.restaurantId || RESTAURANT_ID,
+    updatedAt: new Date().toISOString(),
+    days: Object.fromEntries(Object.entries(state.days || {}).sort(([a], [b]) => a.localeCompare(b))),
+  }, null, 2))
+}
+
+function getDayState(state, businessDate) {
+  if (!state.days[businessDate]) {
+    state.days[businessDate] = {
+      shiftIds: [],
+      closedShiftIds: [],
+      phaseRuns: [],
+      handoffCompleted: false,
+      closeNightCompleted: false,
+      groups: {},
+      lastPhase: null,
+      lastRunAt: null,
+    }
+  }
+  return state.days[businessDate]
+}
+
+function markPhaseRun(state, businessDate, phase, meta = {}) {
+  const day = getDayState(state, businessDate)
+  day.phaseRuns.push({ phase, at: new Date().toISOString(), ...meta })
+  day.lastPhase = phase
+  day.lastRunAt = new Date().toISOString()
+}
+
+function recordGroupProgress(state, businessDate, groupName, kind, count) {
+  if (!count) return
+  const day = getDayState(state, businessDate)
+  if (!day.groups[groupName]) {
+    day.groups[groupName] = {
+      checkIns: 0,
+      checkOuts: 0,
+      lastCheckInAt: null,
+      lastCheckOutAt: null,
+    }
+  }
+  if (kind === 'checkIn') {
+    day.groups[groupName].checkIns += count
+    day.groups[groupName].lastCheckInAt = new Date().toISOString()
+  }
+  if (kind === 'checkOut') {
+    day.groups[groupName].checkOuts += count
+    day.groups[groupName].lastCheckOutAt = new Date().toISOString()
+  }
+}
+
 function mergePhaseMetrics(...parts) {
   const merged = {
     orders: 0,
@@ -715,6 +805,65 @@ async function ensureCashSession(db, shiftId, options = {}) {
   return created.rows[0]
 }
 
+async function settleOrder(db, order, closedAt = new Date()) {
+  const stationId = order.cash_station_id || CASH_STATIONS[0].id
+  const cashierId = order.cashier_id || pick(CASHIERS)
+  const shiftId = order.shift_id || (await db.query(
+    "SELECT id FROM shifts WHERE restaurant_id = $1 AND status = 'OPEN' ORDER BY opened_at DESC LIMIT 1",
+    [RESTAURANT_ID]
+  )).rows[0]?.id
+
+  if (!shiftId) {
+    console.warn(`  ⚠️ Skipping order #${order.id} — no shift`)
+    return { settled: false, payments: 0 }
+  }
+
+  await db.query(`UPDATE orders SET status = 'closed', closed_at = $2, updated_at = now() WHERE id = $1`, [order.id, closedAt])
+  await db.query(`UPDATE order_items SET status = 'prepared', prepared_at = COALESCE(prepared_at, $2), updated_at = now() WHERE order_id = $1 AND status IN ('pending','sent','fire')`, [order.id, closedAt])
+
+  const method = pickWeighted(PAYMENT_METHODS)
+  const orderTotal = Number(order.total || 0)
+  const tip = Number(order.tip || 0)
+  await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','SALE',$4,$5,$6,$7,$4,$4)`,
+    [order.id, method.id, orderTotal, closedAt, shiftId, stationId, cashierId])
+
+  let payments = 1
+  if (tip > 0) {
+    await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','TIP',$4,$5,$6,$7,$4,$4)`,
+      [order.id, method.id, tip, closedAt, shiftId, stationId, cashierId])
+    await db.query(`UPDATE orders SET tip_collected_total = $2, updated_at = now() WHERE id = $1`, [order.id, tip])
+    payments += 1
+  }
+
+  await db.query(`UPDATE tables SET status = 'free', updated_at = now() WHERE restaurant_id = $1 AND id = (SELECT table_id FROM orders WHERE id = $2)`, [RESTAURANT_ID, order.id])
+  return { settled: true, payments }
+}
+
+async function settleOpenOrders(db, options = {}) {
+  const statuses = options.statuses || ['open', 'printed']
+  const query = options.shiftId
+    ? `SELECT id, total, tip, shift_id, cash_station_id, cashier_id, opened_at
+       FROM orders WHERE restaurant_id = $1 AND shift_id = $2 AND status = ANY($3::text[])
+       ORDER BY opened_at ASC`
+    : `SELECT id, total, tip, shift_id, cash_station_id, cashier_id, opened_at
+       FROM orders WHERE restaurant_id = $1 AND status = ANY($2::text[])
+       ORDER BY opened_at ASC`
+  const params = options.shiftId ? [RESTAURANT_ID, options.shiftId, statuses] : [RESTAURANT_ID, statuses]
+  const result = await db.query(query, params)
+
+  let settled = 0
+  let payments = 0
+  for (const order of result.rows) {
+    const closedAt = options.closedAtFactory ? options.closedAtFactory(order) : new Date()
+    const outcome = await settleOrder(db, order, closedAt)
+    if (!outcome.settled) continue
+    settled++
+    payments += outcome.payments
+  }
+
+  return { settled, payments }
+}
+
 async function finalizeShiftClose(db, shiftId, options = {}) {
   const shiftRes = await db.query(
     `SELECT id, restaurant_id, master_station_id, user_id, opened_at, closed_at, status, cash_closure_id
@@ -899,6 +1048,9 @@ async function phaseOpen(db) {
   const earlyKitchen = await simulateRoleCheckIns(db, STAFF_GROUPS.dayKitchenEarly, { hour, dateStr: todayStr, targetShare: hour === 9 ? 0.8 : 1 })
   const dayFloor = await simulateRoleCheckIns(db, STAFF_GROUPS.dayFloorOpen, { hour, dateStr: todayStr, targetShare: hour === 9 ? 0.45 : 1, baseHour: hour === 9 ? 9 : 10 })
   const dayCashiers = await simulateRoleCheckIns(db, STAFF_GROUPS.dayCashierOpen, { hour, dateStr: todayStr, targetShare: hour === 9 ? 0.5 : 1, baseHour: hour === 9 ? 9 : 10 })
+  recordGroupProgress(db.simState, todayStr, 'dayKitchenEarly', 'checkIn', earlyKitchen.total)
+  recordGroupProgress(db.simState, todayStr, 'dayFloorOpen', 'checkIn', dayFloor.total)
+  recordGroupProgress(db.simState, todayStr, 'dayCashierOpen', 'checkIn', dayCashiers.total)
   const morningCheckins = earlyKitchen.total + dayFloor.total + dayCashiers.total
   const morningLate = earlyKitchen.late + dayFloor.late + dayCashiers.late
   if (morningCheckins) console.log(`  👥 Morning arrivals: ${morningCheckins} staff (${morningLate} tarde)`)
@@ -916,10 +1068,14 @@ async function phaseOpen(db) {
       const zombieId = openShift.rows[0].id
       console.log(`  🧟 Zombie shift #${zombieId} from ${shiftDate} detected — force-closing`)
       const closed = await finalizeShiftClose(db, zombieId, { businessDate: shiftDate })
+      const zombieState = getDayState(db.simState, shiftDate)
+      if (!zombieState.closedShiftIds.includes(zombieId)) zombieState.closedShiftIds.push(zombieId)
       shiftsClosed++
       console.log(`  🔐 Zombie shift #${zombieId} closed (${closed.cnt} orders, $${parseFloat(closed.sales).toFixed(2)})`)
     } else {
       console.log(`  ℹ️ Shift #${openShift.rows[0].id} already open for today`)
+      const dayState = getDayState(db.simState, todayStr)
+      if (!dayState.shiftIds.includes(openShift.rows[0].id)) dayState.shiftIds.push(openShift.rows[0].id)
       await ensureCashSession(db, openShift.rows[0].id)
     }
   }
@@ -945,6 +1101,8 @@ async function phaseOpen(db) {
       `, [RESTAURANT_ID, CASH_STATIONS[0].id, cashier, shiftOpenedAt])
       shiftsOpened++
       console.log(`  🔓 Shift #${result.rows[0].id} opened`)
+      const dayState = getDayState(db.simState, todayStr)
+      if (!dayState.shiftIds.includes(result.rows[0].id)) dayState.shiftIds.push(result.rows[0].id)
       await ensureCashSession(db, result.rows[0].id, {
         cashStationId: CASH_STATIONS[0].id,
         cashUserId: cashier,
@@ -998,6 +1156,8 @@ async function phaseAfternoon(db) {
   const todayStr = today()
   const floorCheckouts = await simulateRoleCheckOuts(db, STAFF_GROUPS.dayFloorOpen, { hour, dateStr: todayStr, targetShare: hour === 15 ? 0.35 : hour === 16 ? 0.55 : 0.8 })
   const cashierCheckouts = await simulateRoleCheckOuts(db, STAFF_GROUPS.dayCashierOpen, { hour, dateStr: todayStr, targetShare: hour === 17 ? 0.45 : 0.2 })
+  recordGroupProgress(db.simState, todayStr, 'dayFloorOpen', 'checkOut', floorCheckouts.total)
+  recordGroupProgress(db.simState, todayStr, 'dayCashierOpen', 'checkOut', cashierCheckouts.total)
   const checkouts = floorCheckouts.total + cashierCheckouts.total
   if (checkouts) console.log(`  👋 Partial day checkout: ${checkouts} staff`)
 
@@ -1024,6 +1184,9 @@ async function phaseDinner(db) {
   const nightFloor = await simulateRoleCheckIns(db, STAFF_GROUPS.nightFloor, { hour, dateStr: todayStr, targetShare: hour === 19 ? 0.7 : 1 })
   const nightKitchen = await simulateRoleCheckIns(db, STAFF_GROUPS.nightKitchen, { hour, dateStr: todayStr, targetShare: hour === 19 ? 0.55 : 0.9 })
   const nightCashier = await simulateRoleCheckIns(db, STAFF_GROUPS.nightCashier, { hour, dateStr: todayStr, targetShare: hour === 19 ? 0.6 : 1 })
+  recordGroupProgress(db.simState, todayStr, 'nightFloor', 'checkIn', nightFloor.total)
+  recordGroupProgress(db.simState, todayStr, 'nightKitchen', 'checkIn', nightKitchen.total)
+  recordGroupProgress(db.simState, todayStr, 'nightCashier', 'checkIn', nightCashier.total)
   const eveningCheckins = nightFloor.total + nightKitchen.total + nightCashier.total
   const eveningLate = nightFloor.late + nightKitchen.late + nightCashier.late
   if (eveningCheckins) console.log(`  👥 Evening arrivals: ${eveningCheckins} staff (${eveningLate} tarde)`)
@@ -1046,152 +1209,8 @@ async function phaseDinner(db) {
 // ── Phase: CLOSE (10pm) ──────────────────────────────────────────
 
 async function phaseClose(db) {
-  console.log('🔒 PHASE: CLOSE — End of day')
-  const todayStr = today()
-
-  // 0. Close ALL remaining open orders (end of day — everyone pays)
-  // Override: close 100% of open orders, not just 60-80%
-  const allOpen = await db.query(
-    `SELECT id, total, tip, shift_id, cash_station_id, cashier_id, opened_at
-     FROM orders WHERE restaurant_id = $1 AND status IN ('open', 'printed')`,
-    [RESTAURANT_ID]
-  )
-  let closedAtEnd = 0
-  for (const o of allOpen.rows) {
-    const closedAt = new Date()
-    const stationId = o.cash_station_id || CASH_STATIONS[0].id
-    const cashierId = o.cashier_id || pick(CASHIERS)
-    const shiftId = o.shift_id || (await db.query("SELECT id FROM shifts WHERE restaurant_id = $1 ORDER BY id DESC LIMIT 1", [RESTAURANT_ID])).rows[0]?.id
-    if (!shiftId) continue
-
-    await db.query(`UPDATE orders SET status = 'closed', closed_at = $2, updated_at = now() WHERE id = $1`, [o.id, closedAt])
-    // Also mark all items as prepared
-    await db.query(`UPDATE order_items SET status = 'prepared', prepared_at = COALESCE(prepared_at, $2), updated_at = now() WHERE order_id = $1 AND status IN ('pending','sent','fire')`, [o.id, closedAt])
-    const method = pickWeighted(PAYMENT_METHODS)
-    await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','SALE',$4,$5,$6,$7,$4,$4)`,
-      [o.id, method.id, Number(o.total), closedAt, shiftId, stationId, cashierId])
-    const tip = Number(o.tip || 0)
-    if (tip > 0) {
-      await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','TIP',$4,$5,$6,$7,$4,$4)`,
-        [o.id, method.id, tip, closedAt, shiftId, stationId, cashierId])
-      await db.query(`UPDATE orders SET tip_collected_total = $2 WHERE id = $1`, [o.id, tip])
-    }
-    await db.query(`UPDATE tables SET status = 'free', updated_at = now() WHERE restaurant_id = $1 AND id = (SELECT table_id FROM orders WHERE id = $2)`, [RESTAURANT_ID, o.id])
-    closedAtEnd++
-  }
-  if (closedAtEnd) console.log(`  🧾 End-of-day: closed ${closedAtEnd} remaining open orders`)
-
-  // 1. Generate last orders (all closed — no open ones at close time)
-  const lastOrders = await generateOrders(db, rand(5, 12), { noOpen: true })
-
-  // 1.5. Guarantee at least 1 cancelled order (void) per day for demo/dashboard visibility
-  const voidCountToday = await db.query(
-    `SELECT count(*) as n FROM orders
-     WHERE restaurant_id = $1 AND status = 'void' AND cancelled_at::date = $2`,
-    [RESTAURANT_ID, todayStr]
-  )
-  if (parseInt(voidCountToday.rows[0].n) === 0) {
-    // Pick a random closed order from today that has no payment yet (easier to void)
-    const candidate = await db.query(
-      `SELECT o.id, o.total FROM orders o
-       LEFT JOIN payments p ON p.order_id = o.id
-       WHERE o.restaurant_id = $1 AND o.status = 'closed' AND o.closed_at::date = $2
-       ORDER BY random() LIMIT 1`,
-      [RESTAURANT_ID, todayStr]
-    )
-    if (candidate.rows.length > 0) {
-      const victim = candidate.rows[0]
-      const cancelReason = pick(['Cliente se fue sin pagar', 'Error de captura del mesero', 'Cambio de mesa', 'Duplicada por sistema'])
-      const manager = pick(MANAGERS)
-      const cancelledAt = new Date()
-      await db.query(
-        `UPDATE orders SET status = 'void', cancelled_at = $2, cancelled_by_user_id = $3, cancel_reason = $4, updated_at = now() WHERE id = $1`,
-        [victim.id, cancelledAt, manager, cancelReason]
-      )
-      console.log(`  🚫 Forced void: order #${victim.id} ($${parseFloat(victim.total).toFixed(2)}) — ${cancelReason}`)
-    }
-  } else {
-    console.log(`  🚫 Voids today: ${voidCountToday.rows[0].n} (no forced void needed)`)
-  }
-
-  // 2. Get the open shift
-  const shiftRow = await db.query(
-    "SELECT id, opened_at FROM shifts WHERE restaurant_id = $1 AND status = 'OPEN' LIMIT 1",
-    [RESTAURANT_ID]
-  )
-  if (shiftRow.rows.length === 0) {
-    console.log('  ⚠️ No open shift to close')
-    return phaseResult('close', {
-      shiftsClosed: 0,
-      orders: lastOrders.created,
-      revenue: lastOrders.revenue,
-      payments: lastOrders.payments,
-      skipped: true,
-    })
-  }
-  const shiftId = shiftRow.rows[0].id
-
-  // 3. Create payments for all unpaid closed orders in this shift
-  const unpaid = await db.query(`
-    SELECT o.id, o.total, o.shift_id, o.cash_station_id, o.cashier_id, o.closed_at
-    FROM orders o LEFT JOIN payments p ON p.order_id = o.id
-    WHERE o.shift_id = $1 AND o.status = 'closed' AND p.id IS NULL
-  `, [shiftId])
-
-  let paymentCount = 0
-  for (const order of unpaid.rows) {
-    const method = pickWeighted(PAYMENT_METHODS)
-    await db.query(`
-      INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at)
-      VALUES ($1, $2, $3, 'MXN', 'settled', 'SALE', $4, $5, $6, $7, $4, $4)
-    `, [order.id, method.id, order.total, order.closed_at || new Date(), shiftId, order.cash_station_id, order.cashier_id])
-    paymentCount++
-  }
-  console.log(`  💳 Payments created: ${paymentCount}`)
-
-  const closed = await finalizeShiftClose(db, shiftId, { businessDate: dateInMx(shiftRow.rows[0].opened_at) })
-  console.log(`  🔐 Shift #${shiftId} CLOSED — ${closed.cnt} orders, $${parseFloat(closed.sales).toFixed(2)} revenue`)
-
-  // 11. Evening staff check-out
-  const eveningCheckins = await db.query(`
-    SELECT ae.user_id FROM attendance_events ae
-    WHERE ae.restaurant_id = $1 AND ae.event_date = $2 AND ae.event_type = 'check_in'
-    AND extract(hour from ae.event_at) BETWEEN 16 AND 19
-    AND NOT EXISTS (
-      SELECT 1 FROM attendance_events ae2
-      WHERE ae2.restaurant_id = $1 AND ae2.user_id = ae.user_id AND ae2.event_date = $2 AND ae2.event_type = 'check_out'
-      AND extract(hour from ae2.event_at) >= 20
-    )
-  `, [RESTAURANT_ID, todayStr])
-
-  for (const row of eveningCheckins.rows) {
-    const checkoutAt = new Date()
-    checkoutAt.setHours(rand(22, 23), rand(0, 45), 0, 0)
-    await db.query(`
-      INSERT INTO attendance_events (restaurant_id, user_id, event_type, event_method, event_at, event_date, source_context, created_at, updated_at)
-      VALUES ($1, $2, 'check_out', 'pin', $3, $4, 'simulator', now(), now())
-    `, [RESTAURANT_ID, row.user_id, checkoutAt, todayStr])
-
-    // Update attendance_session with checkout + worked_minutes
-    await db.query(`
-      UPDATE attendance_sessions
-      SET last_check_out_at = $3,
-          worked_minutes = EXTRACT(EPOCH FROM ($3::timestamptz - first_check_in_at)) / 60,
-          status = 'closed',
-          updated_at = now()
-      WHERE restaurant_id = $1 AND user_id = $2 AND work_date = $4 AND status = 'open'
-    `, [RESTAURANT_ID, row.user_id, checkoutAt, todayStr])
-  }
-  console.log(`  👋 Evening check-out: ${eveningCheckins.rows.length} staff`)
-
-  return phaseResult('close', {
-    attendanceEvents: eveningCheckins.rows.length,
-    checkOuts: eveningCheckins.rows.length,
-    shiftsClosed: 1,
-    orders: lastOrders.created,
-    revenue: lastOrders.revenue,
-    payments: lastOrders.payments + paymentCount,
-  })
+  console.log('🔒 PHASE: CLOSE — legacy alias → CLOSE_NIGHT')
+  return phaseCloseNight(db)
 }
 
 // ── Phase: SHIFT_CHANGE (6pm) — Close day shift, open night shift ──
@@ -1199,34 +1218,16 @@ async function phaseClose(db) {
 async function phaseShiftChange(db) {
   console.log('🔄 PHASE: SHIFT_CHANGE — Day→Night transition')
   const todayStr = today()
+  const dayState = getDayState(db.simState, todayStr)
+  if (dayState.handoffCompleted) {
+    console.log('  ℹ️ Handoff already completed for today — continuing with dinner flow')
+    return phaseDinner(db)
+  }
 
   // 1. Close all remaining open orders from day shift
   await closeLingeringOrders(db)
-  // Force-close any that remain
-  const remaining = await db.query(
-    `SELECT id, total, tip, shift_id, cash_station_id, cashier_id, opened_at
-     FROM orders WHERE restaurant_id = $1 AND status IN ('open', 'printed')`, [RESTAURANT_ID]
-  )
-  for (const o of remaining.rows) {
-    const closedAt = new Date()
-    const stationId = o.cash_station_id || CASH_STATIONS[0].id
-    const cashierId = o.cashier_id || pick(CASHIERS)
-    const shiftId = o.shift_id || (await db.query("SELECT id FROM shifts WHERE restaurant_id = $1 AND status = 'OPEN' LIMIT 1", [RESTAURANT_ID])).rows[0]?.id
-    if (!shiftId) continue
-    await db.query(`UPDATE orders SET status = 'closed', closed_at = $2, updated_at = now() WHERE id = $1`, [o.id, closedAt])
-    await db.query(`UPDATE order_items SET status = 'prepared', prepared_at = COALESCE(prepared_at, $2), updated_at = now() WHERE order_id = $1 AND status IN ('pending','sent','fire')`, [o.id, closedAt])
-    const method = pickWeighted(PAYMENT_METHODS)
-    await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','SALE',$4,$5,$6,$7,$4,$4)`,
-      [o.id, method.id, Number(o.total), closedAt, shiftId, stationId, cashierId])
-    const tip = Number(o.tip || 0)
-    if (tip > 0) {
-      await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','TIP',$4,$5,$6,$7,$4,$4)`,
-        [o.id, method.id, tip, closedAt, shiftId, stationId, cashierId])
-      await db.query(`UPDATE orders SET tip_collected_total = $2 WHERE id = $1`, [o.id, tip])
-    }
-    await db.query(`UPDATE tables SET status = 'free', updated_at = now() WHERE restaurant_id = $1 AND id = (SELECT table_id FROM orders WHERE id = $2)`, [RESTAURANT_ID, o.id])
-  }
-  if (remaining.rows.length) console.log(`  🧾 Closed ${remaining.rows.length} day orders`)
+  const remaining = await settleOpenOrders(db)
+  if (remaining.settled) console.log(`  🧾 Closed ${remaining.settled} day orders`)
 
   // 2. Close day shift
   const dayShift = await db.query("SELECT id, opened_at FROM shifts WHERE restaurant_id = $1 AND status = 'OPEN' LIMIT 1", [RESTAURANT_ID])
@@ -1235,6 +1236,7 @@ async function phaseShiftChange(db) {
     const shiftId = dayShift.rows[0].id
     console.log(`  🔐 Closing day shift #${shiftId}`)
     const closed = await finalizeShiftClose(db, shiftId, { businessDate: todayStr })
+    if (!dayState.closedShiftIds.includes(shiftId)) dayState.closedShiftIds.push(shiftId)
     console.log(`  📊 Day shift closed — ${closed.cnt} orders, $${parseFloat(closed.sales).toFixed(2)}`)
     dayShiftClosed = true
   }
@@ -1242,6 +1244,9 @@ async function phaseShiftChange(db) {
   const floorCheckouts = await simulateRoleCheckOuts(db, STAFF_GROUPS.dayFloorOpen, { hour: 18, dateStr: todayStr, targetShare: 1, checkoutHour: 18 })
   const cashierCheckouts = await simulateRoleCheckOuts(db, STAFF_GROUPS.dayCashierOpen, { hour: 18, dateStr: todayStr, targetShare: 0.5, checkoutHour: 18 })
   const kitchenCarry = await simulateRoleCheckOuts(db, STAFF_GROUPS.dayKitchenEarly, { hour: 18, dateStr: todayStr, targetShare: 0.2, checkoutHour: 18 })
+  recordGroupProgress(db.simState, todayStr, 'dayFloorOpen', 'checkOut', floorCheckouts.total)
+  recordGroupProgress(db.simState, todayStr, 'dayCashierOpen', 'checkOut', cashierCheckouts.total)
+  recordGroupProgress(db.simState, todayStr, 'dayKitchenEarly', 'checkOut', kitchenCarry.total)
   const morningCheckoutCount = floorCheckouts.total + cashierCheckouts.total + kitchenCarry.total
   if (morningCheckoutCount) console.log(`  👋 Day handoff checkout: ${morningCheckoutCount} staff`)
 
@@ -1254,6 +1259,7 @@ async function phaseShiftChange(db) {
     VALUES ($1, $2, $3, $4, 'OPEN', false, now(), now()) RETURNING id
   `, [RESTAURANT_ID, CASH_STATIONS[0].id, nightCashier, nightOpenedAt])
   console.log(`  🌙 Night shift #${nightShift.rows[0].id} opened`)
+  if (!dayState.shiftIds.includes(nightShift.rows[0].id)) dayState.shiftIds.push(nightShift.rows[0].id)
   await ensureCashSession(db, nightShift.rows[0].id, {
     cashStationId: CASH_STATIONS[0].id,
     cashUserId: nightCashier,
@@ -1263,8 +1269,12 @@ async function phaseShiftChange(db) {
   const nightFloor = await simulateRoleCheckIns(db, STAFF_GROUPS.nightFloor, { hour: 18, dateStr: todayStr, targetShare: 0.85 })
   const nightKitchen = await simulateRoleCheckIns(db, STAFF_GROUPS.nightKitchen, { hour: 18, dateStr: todayStr, targetShare: 0.75 })
   const nightCashierCheckins = await simulateRoleCheckIns(db, STAFF_GROUPS.nightCashier, { hour: 18, dateStr: todayStr, targetShare: 1 })
+  recordGroupProgress(db.simState, todayStr, 'nightFloor', 'checkIn', nightFloor.total)
+  recordGroupProgress(db.simState, todayStr, 'nightKitchen', 'checkIn', nightKitchen.total)
+  recordGroupProgress(db.simState, todayStr, 'nightCashier', 'checkIn', nightCashierCheckins.total)
   const eveningCheckins = nightFloor.total + nightKitchen.total + nightCashierCheckins.total
   console.log(`  👥 Evening handoff arrivals: ${eveningCheckins} staff`)
+  dayState.handoffCompleted = true
 
   // 6. Generate first night orders
   const orders = await generateOrders(db, rand(5, 10))
@@ -1315,6 +1325,8 @@ async function phaseLateNight(db) {
 
   const floorCheckouts = await simulateRoleCheckOuts(db, STAFF_GROUPS.nightFloor, { hour, dateStr: lateNightDate, targetShare: hour <= 22 ? 0.35 : hour === 23 ? 0.55 : 0.7, checkoutHour: Math.min(Math.max(hour, 22), 23) })
   const earlyKitchenCheckouts = await simulateRoleCheckOuts(db, STAFF_GROUPS.nightKitchen, { hour, dateStr: lateNightDate, targetShare: hour >= 23 ? 0.2 : 0.05, checkoutHour: hour >= 23 ? 23 : hour })
+  recordGroupProgress(db.simState, lateNightDate, 'nightFloor', 'checkOut', floorCheckouts.total)
+  recordGroupProgress(db.simState, lateNightDate, 'nightKitchen', 'checkOut', earlyKitchenCheckouts.total)
   const checkouts = floorCheckouts.total + earlyKitchenCheckouts.total
   if (checkouts) console.log(`  👋 Late-night partial checkout: ${checkouts} staff`)
 
@@ -1336,35 +1348,22 @@ async function phaseCloseNight(db) {
   // Business date = yesterday (since it's 3am, the fiscal day is the previous day)
   const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1)
   const businessDate = formatDateYmd(yesterday)
-  const todayStr = today()
+  const dayState = getDayState(db.simState, businessDate)
+  if (dayState.closeNightCompleted) {
+    console.log('  ℹ️ Night close already completed for business date')
+    return phaseResult('close_night', {
+      skipped: true,
+      attendanceEvents: 0,
+      checkOuts: 0,
+      shiftsClosed: 0,
+      orders: 0,
+      revenue: 0,
+    })
+  }
 
   // 1. Close ALL remaining open orders
-  const allOpen = await db.query(
-    `SELECT id, total, tip, shift_id, cash_station_id, cashier_id, opened_at
-     FROM orders WHERE restaurant_id = $1 AND status IN ('open', 'printed')`, [RESTAURANT_ID]
-  )
-  let closedAtEnd = 0
-  for (const o of allOpen.rows) {
-    const closedAt = new Date()
-    const stationId = o.cash_station_id || CASH_STATIONS[0].id
-    const cashierId = o.cashier_id || pick(CASHIERS)
-    const shiftId = o.shift_id || (await db.query("SELECT id FROM shifts WHERE restaurant_id = $1 ORDER BY id DESC LIMIT 1", [RESTAURANT_ID])).rows[0]?.id
-    if (!shiftId) continue
-    await db.query(`UPDATE orders SET status = 'closed', closed_at = $2, updated_at = now() WHERE id = $1`, [o.id, closedAt])
-    await db.query(`UPDATE order_items SET status = 'prepared', prepared_at = COALESCE(prepared_at, $2), updated_at = now() WHERE order_id = $1 AND status IN ('pending','sent','fire')`, [o.id, closedAt])
-    const method = pickWeighted(PAYMENT_METHODS)
-    await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','SALE',$4,$5,$6,$7,$4,$4)`,
-      [o.id, method.id, Number(o.total), closedAt, shiftId, stationId, cashierId])
-    const tip = Number(o.tip || 0)
-    if (tip > 0) {
-      await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','TIP',$4,$5,$6,$7,$4,$4)`,
-        [o.id, method.id, tip, closedAt, shiftId, stationId, cashierId])
-      await db.query(`UPDATE orders SET tip_collected_total = $2 WHERE id = $1`, [o.id, tip])
-    }
-    await db.query(`UPDATE tables SET status = 'free', updated_at = now() WHERE restaurant_id = $1 AND id = (SELECT table_id FROM orders WHERE id = $2)`, [RESTAURANT_ID, o.id])
-    closedAtEnd++
-  }
-  if (closedAtEnd) console.log(`  🧾 Closed ${closedAtEnd} remaining night orders`)
+  const allOpen = await settleOpenOrders(db)
+  if (allOpen.settled) console.log(`  🧾 Closed ${allOpen.settled} remaining night orders`)
 
   // 2. Close night shift
   const nightShift = await db.query("SELECT id, opened_at FROM shifts WHERE restaurant_id = $1 AND status = 'OPEN' LIMIT 1", [RESTAURANT_ID])
@@ -1372,12 +1371,16 @@ async function phaseCloseNight(db) {
     const shiftId = nightShift.rows[0].id
     console.log(`  🔐 Closing night shift #${shiftId}`)
     const closed = await finalizeShiftClose(db, shiftId, { businessDate })
+    if (!dayState.closedShiftIds.includes(shiftId)) dayState.closedShiftIds.push(shiftId)
     console.log(`  📊 Night shift closed — ${closed.cnt} orders, $${parseFloat(closed.sales).toFixed(2)}`)
   }
 
   const kitchenFinal = await simulateRoleCheckOuts(db, STAFF_GROUPS.nightKitchen, { hour, dateStr: businessDate, targetShare: 1, checkoutHour: hour })
   const cashierFinal = await simulateRoleCheckOuts(db, STAFF_GROUPS.nightCashier, { hour, dateStr: businessDate, targetShare: 1, checkoutHour: hour })
   const floorFinal = await simulateRoleCheckOuts(db, STAFF_GROUPS.nightFloor, { hour, dateStr: businessDate, targetShare: 1, checkoutHour: hour })
+  recordGroupProgress(db.simState, businessDate, 'nightKitchen', 'checkOut', kitchenFinal.total)
+  recordGroupProgress(db.simState, businessDate, 'nightCashier', 'checkOut', cashierFinal.total)
+  recordGroupProgress(db.simState, businessDate, 'nightFloor', 'checkOut', floorFinal.total)
   const finalCheckouts = kitchenFinal.total + cashierFinal.total + floorFinal.total
   if (finalCheckouts) console.log(`  💤 Final close checkout: ${finalCheckouts} staff`)
 
@@ -1386,6 +1389,7 @@ async function phaseCloseNight(db) {
 
   // 4. Free all tables
   await db.query(`UPDATE tables SET status = 'free', updated_at = now() WHERE restaurant_id = $1`, [RESTAURANT_ID])
+  dayState.closeNightCompleted = true
 
   return phaseResult('close_night', {
     attendanceEvents: finalCheckouts,
@@ -2048,6 +2052,7 @@ async function main() {
     startedAt,
   })
   const client = new Client(DB_URL)
+  client.simState = loadSimulatorState()
   await client.connect()
 
   console.log(`\n🔥 Fogo de Chão Simulator v3 — ${envLabel} — ${startedAt}`)
@@ -2082,6 +2087,14 @@ async function main() {
     }
 
     const phaseSummary = await phaseHandlers[phase](client)
+    const phaseBusinessDate = phase === 'close_night'
+      ? formatDateYmd(new Date(mxNow().getTime() - 24 * 60 * 60 * 1000))
+      : today()
+    markPhaseRun(client.simState, phaseBusinessDate, phaseSummary.name, {
+      forced: Boolean(PHASE_OVERRIDE),
+      hour: getHourMX(),
+    })
+    saveSimulatorState(client.simState)
     recordRuntimeStep(tracker, phaseSummary.name, phaseSummary)
 
     // Run inventory simulation after each phase
