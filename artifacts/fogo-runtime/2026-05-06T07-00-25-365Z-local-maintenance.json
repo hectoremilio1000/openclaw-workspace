@@ -1,0 +1,27 @@
+{
+  "type": "maintenance",
+  "envProfile": "local",
+  "businessDate": "2026-05-05",
+  "serviceWindow": "LATE_NIGHT",
+  "restaurantId": 40,
+  "timestamp": "2026-05-06T07:00:25.365Z",
+  "shiftId": 111242,
+  "shiftStatus": "OPEN",
+  "plan": [
+    "ROTATE_ORDERS",
+    "ENSURE_COVERAGE"
+  ],
+  "metrics": {
+    "orders": 0,
+    "revenue": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "errors": []
+  },
+  "coverage": {
+    "open": 3,
+    "printed": 4
+  },
+  "coverageOk": true,
+  "issues": []
+}

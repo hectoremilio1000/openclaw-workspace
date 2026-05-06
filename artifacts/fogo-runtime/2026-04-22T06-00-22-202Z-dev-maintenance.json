@@ -1,0 +1,26 @@
+{
+  "type": "maintenance",
+  "envProfile": "dev",
+  "businessDate": "2026-04-21",
+  "serviceWindow": "LATE_NIGHT",
+  "restaurantId": 9,
+  "timestamp": "2026-04-22T06:00:22.202Z",
+  "shiftId": 36,
+  "shiftStatus": "OPEN",
+  "plan": [
+    "ENSURE_COVERAGE"
+  ],
+  "metrics": {
+    "orders": 0,
+    "revenue": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "errors": []
+  },
+  "coverage": {
+    "open": 2,
+    "printed": 2
+  },
+  "coverageOk": true,
+  "issues": []
+}

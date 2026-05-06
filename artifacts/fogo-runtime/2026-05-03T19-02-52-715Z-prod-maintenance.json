@@ -1,0 +1,27 @@
+{
+  "type": "maintenance",
+  "envProfile": "prod",
+  "businessDate": "2026-05-03",
+  "serviceWindow": "LUNCH",
+  "restaurantId": 40,
+  "timestamp": "2026-05-03T19:02:52.715Z",
+  "shiftId": 118269,
+  "shiftStatus": "OPEN",
+  "plan": [
+    "ROTATE_ORDERS",
+    "ENSURE_COVERAGE"
+  ],
+  "metrics": {
+    "orders": 2,
+    "revenue": 13572,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "errors": []
+  },
+  "coverage": {
+    "open": 3,
+    "printed": 5
+  },
+  "coverageOk": true,
+  "issues": []
+}

@@ -1,0 +1,27 @@
+{
+  "type": "maintenance",
+  "envProfile": "prod",
+  "businessDate": "2026-04-21",
+  "serviceWindow": "DINNER",
+  "restaurantId": 40,
+  "timestamp": "2026-04-22T03:01:30.667Z",
+  "shiftId": 118229,
+  "shiftStatus": "OPEN",
+  "plan": [
+    "ROTATE_ORDERS",
+    "ENSURE_COVERAGE"
+  ],
+  "metrics": {
+    "orders": 2,
+    "revenue": 12934,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "errors": []
+  },
+  "coverage": {
+    "open": 4,
+    "printed": 4
+  },
+  "coverageOk": true,
+  "issues": []
+}

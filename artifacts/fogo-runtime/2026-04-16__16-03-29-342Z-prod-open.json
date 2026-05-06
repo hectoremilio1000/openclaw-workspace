@@ -1,0 +1,142 @@
+{
+  "status": "ok",
+  "envLabel": "PROD",
+  "envProfile": "prod",
+  "phase": "open",
+  "restaurantId": 40,
+  "startedAt": "2026-04-16T16:02:54.186Z",
+  "finishedAt": "2026-04-16T16:03:29.342Z",
+  "plan": {
+    "phase": "open",
+    "scenario": "opening_ramp",
+    "serviceProfile": "prep_and_open",
+    "expectedCovers": 24,
+    "expectedSalesRange": [
+      55000,
+      95000
+    ],
+    "expectedOrdersRange": [
+      8,
+      14
+    ],
+    "attendanceIncidents": [
+      "late_waiter"
+    ],
+    "inventoryPressure": [
+      "produce",
+      "bar_prep",
+      "pantry"
+    ],
+    "operationalRisks": [
+      "zombie_shift",
+      "cash_session_missing"
+    ],
+    "restaurantId": 40,
+    "envProfile": "prod",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-16T16:02:54.186Z"
+  },
+  "verification": {
+    "ok": false,
+    "businessDate": "2026-04-16",
+    "envProfile": "prod",
+    "phase": "open",
+    "runConsistency": {
+      "ok": true,
+      "summary": {
+        "orders": 9,
+        "revenue": 38581.6,
+        "checkIns": 14,
+        "checkOuts": 0,
+        "shiftsOpened": 1,
+        "shiftsClosed": 0,
+        "inventoryPurchases": 24,
+        "inventoryConsumptions": 0,
+        "inventoryWaste": 0
+      },
+      "issues": [],
+      "warnings": [
+        "run revenue 38581.60 is below expected min 55000"
+      ]
+    },
+    "dayHealth": {
+      "ok": false,
+      "summary": {
+        "openShiftCount": 1,
+        "checkIns": 14,
+        "checkOuts": 0,
+        "orders": 9,
+        "revenue": 38581.6,
+        "openOrders": 0,
+        "negativeInventoryItems": 11
+      },
+      "issues": [
+        "12 open-order records attached to closed shifts"
+      ],
+      "warnings": [
+        "11 inventory items have negative cumulative balance"
+      ]
+    },
+    "issues": [
+      "12 open-order records attached to closed shifts"
+    ],
+    "warnings": [
+      "run revenue 38581.60 is below expected min 55000",
+      "11 inventory items have negative cumulative balance"
+    ]
+  },
+  "totals": {
+    "orders": 9,
+    "revenue": 38581.6,
+    "schedules": 33,
+    "attendanceEvents": 14,
+    "checkIns": 14,
+    "checkOuts": 0,
+    "shiftsOpened": 1,
+    "shiftsClosed": 0,
+    "payments": 16,
+    "inventoryPurchases": 24,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 24,
+      "expectedSalesMin": 55000,
+      "expectedSalesMax": 95000
+    },
+    {
+      "name": "open",
+      "schedules": 33,
+      "attendanceEvents": 14,
+      "checkIns": 14,
+      "lateCheckIns": 1,
+      "shiftsOpened": 1,
+      "shiftsClosed": 0,
+      "orders": 9,
+      "revenue": 38581.59999999999,
+      "payments": 16
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 24,
+      "inventoryConsumptions": 0,
+      "inventoryWaste": 0,
+      "skipped": false
+    },
+    {
+      "name": "reservations",
+      "reservations": 0
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": false,
+      "runIssueCount": 0,
+      "runWarningCount": 1,
+      "dayIssueCount": 1,
+      "dayWarningCount": 1
+    }
+  ],
+  "error": null
+}

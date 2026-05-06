@@ -35,11 +35,16 @@ const PHASE_OVERRIDE = (() => {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-const PROD_DB_URL = 'postgresql://postgres:ZksggoNJFXzWqLlTslzxWmFLZaVRXCVw@trolley.proxy.rlwy.net:20722/railway'
-const DEV_DB_URL = 'postgresql://postgres:QJXfNcdEphOhyLCfOHjuOmXDKzRxVUnU@centerbeam.proxy.rlwy.net:38630/railway'
-const LOCAL_DB_URL = 'postgresql://pos_user:pos_pass@127.0.0.1:5432/pos_app'
+const PROD_DB_URL = process.env.FOGO_PROD_DB_URL || ''
+const DEV_DB_URL = process.env.FOGO_DEV_DB_URL || ''
+const LOCAL_DB_URL = process.env.FOGO_LOCAL_DB_URL || ''
 
 const DB_URL = IS_LOCAL ? LOCAL_DB_URL : IS_DEV ? DEV_DB_URL : PROD_DB_URL
+
+if (!DB_URL) {
+  console.error('❌ Missing database URL for selected environment. Set one of: FOGO_PROD_DB_URL, FOGO_DEV_DB_URL, FOGO_LOCAL_DB_URL')
+  process.exit(1)
+}
 
 // Load dev ID mapping if --dev
 let idMap = null
@@ -70,6 +75,388 @@ const ENV_PROFILE = IS_LOCAL ? 'local' : IS_DEV ? 'dev' : 'prod'
 const MX_TZ = 'America/Mexico_City'
 const RUNTIME_ARTIFACT_DIR = join(__dirname, '..', 'artifacts', 'fogo-runtime')
 
+// ── Time Engine (canonical — single source of truth) ──────────────
+const OPERATIONAL_CUT_HOUR = 4
+
+const _mxFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: MX_TZ,
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+})
+
+function getMXComponents(now = new Date()) {
+  const parts = Object.fromEntries(
+    _mxFormatter.formatToParts(now).map(p => [p.type, p.value])
+  )
+  return {
+    year: parseInt(parts.year),
+    month: parseInt(parts.month),
+    day: parseInt(parts.day),
+    hour: parseInt(parts.hour === '24' ? '0' : parts.hour),
+    minute: parseInt(parts.minute),
+  }
+}
+
+function getBusinessDate(now = new Date()) {
+  const mx = getMXComponents(now)
+  let { year, month, day } = mx
+  if (mx.hour < OPERATIONAL_CUT_HOUR) {
+    const prev = new Date(year, month - 1, day - 1)
+    year = prev.getFullYear()
+    month = prev.getMonth() + 1
+    day = prev.getDate()
+  }
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function getServiceWindow(now = new Date()) {
+  const { hour } = getMXComponents(now)
+  if (hour >= OPERATIONAL_CUT_HOUR && hour <= 8) return 'CLOSED'
+  if (hour === 9)               return 'PREP'
+  if (hour >= 10 && hour <= 14) return 'LUNCH'
+  if (hour >= 15 && hour <= 17) return 'AFTERNOON'
+  if (hour >= 18 && hour <= 21) return 'DINNER'
+  if (hour >= 22 || hour <= 1)  return 'LATE_NIGHT'  // 10pm-1:59am
+  if (hour >= 2 && hour <= 3)   return 'CLOSE'       // 2am-3:59am
+  return 'CLOSED'
+}
+
+function getHourMX(now = new Date()) {
+  return getMXComponents(now).hour
+}
+
+function formatYMD(year, month, day) {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+// today()/tomorrow() derived from business date
+function today() { return getBusinessDate() }
+function tomorrow() {
+  const bd = getBusinessDate()
+  const d = new Date(bd + 'T12:00:00')
+  d.setDate(d.getDate() + 1)
+  return formatYMD(d.getFullYear(), d.getMonth() + 1, d.getDate())
+}
+
+function mxTimestamp(hour, minute = 0, dateStr = getBusinessDate()) {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const approx = new Date(Date.UTC(year, month - 1, day, hour, minute))
+  const mxStr = approx.toLocaleString('en-US', { timeZone: 'America/Mexico_City' })
+  const mxDate = new Date(mxStr)
+  const offsetMs = approx.getTime() - mxDate.getTime()
+  return new Date(Date.UTC(year, month - 1, day, hour, minute) + offsetMs)
+}
+
+// ── Phase → Service Window Mapping ─────────────────────────────────
+const PHASE_TO_WINDOW = {
+  'open': 'PREP', 'prep': 'PREP',
+  'lunch': 'LUNCH',
+  'afternoon': 'AFTERNOON',
+  'dinner': 'DINNER',
+  'late_night': 'LATE_NIGHT', 'latenight': 'LATE_NIGHT',
+  'close': 'CLOSE', 'close_night': 'CLOSE', 'closenight': 'CLOSE',
+  'shift_change': 'DINNER', // shift_change was at 6pm = DINNER window
+}
+
+// ── Demo Coverage Policy ──────────────────────────────────────────
+const DEMO_COVERAGE_POLICY = {
+  PREP:       { minOpen: 2, minPrinted: 2, rotatePerTick: 1 },
+  LUNCH:      { minOpen: 2, minPrinted: 2, rotatePerTick: 2 },
+  AFTERNOON:  { minOpen: 2, minPrinted: 2, rotatePerTick: 2 },
+  DINNER:     { minOpen: 2, minPrinted: 2, rotatePerTick: 2 },
+  LATE_NIGHT: { minOpen: 2, minPrinted: 2, rotatePerTick: 1 },
+  CLOSE:      { minOpen: 0, minPrinted: 0, rotatePerTick: 0 },
+  CLOSED:     { minOpen: 0, minPrinted: 0, rotatePerTick: 0 },
+}
+
+// ── Run Lock (DB-based idempotency) ────────────────────────────────
+async function cleanupStaleRuns(db) {
+  const result = await db.query(`
+    UPDATE sim_runs SET status = 'stale', error_message = 'exceeded 15min TTL'
+    WHERE restaurant_id = $1 AND env = $2 AND status = 'running'
+      AND started_at < now() - INTERVAL '15 minutes'
+  `, [RESTAURANT_ID, ENV_PROFILE])
+  if (result.rowCount > 0) console.log(`  🧹 Cleaned ${result.rowCount} stale run(s)`)
+}
+
+async function acquireRunLock(db, businessDate, serviceWindow) {
+  await cleanupStaleRuns(db)
+  try {
+    const result = await db.query(`
+      INSERT INTO sim_runs (restaurant_id, env, business_date, service_window, status)
+      VALUES ($1, $2, $3, $4, 'running')
+      ON CONFLICT (restaurant_id, env, business_date, service_window)
+      DO UPDATE SET started_at = now(), status = 'running', error_message = NULL
+      WHERE sim_runs.status = 'stale'
+      RETURNING id
+    `, [RESTAURANT_ID, ENV_PROFILE, businessDate, serviceWindow])
+    if (result.rows.length > 0) {
+      console.log(`  🔒 Run lock acquired for ${serviceWindow} on ${businessDate}`)
+      return result.rows[0].id
+    }
+    console.log(`  ℹ️ Already ran ${serviceWindow} for ${businessDate} — skipping`)
+    return null
+  } catch (err) {
+    if (String(err?.code) === '23505') {
+      console.log(`  ℹ️ Already ran ${serviceWindow} for ${businessDate} — skipping`)
+      return null
+    }
+    throw err
+  }
+}
+
+async function releaseRunLock(db, runId, status, metrics = {}) {
+  if (!runId) return
+  await db.query(`
+    UPDATE sim_runs SET status = $2, finished_at = now(),
+      orders_created = $3, revenue = $4, error_message = $5
+    WHERE id = $1
+  `, [runId, status, metrics.orders || 0, metrics.revenue || 0, metrics.error || null])
+}
+
+// ── Preflight Checks ───────────────────────────────────────────────
+async function preflight(db) {
+  const hard = []
+  const soft = []
+
+  const simRunsOk = await db.query("SELECT 1 FROM information_schema.tables WHERE table_name='sim_runs'")
+  if (!simRunsOk.rows.length) hard.push('sim_runs table missing')
+
+  const openShifts = await db.query("SELECT count(*)::int as n FROM shifts WHERE restaurant_id=$1 AND status='OPEN'", [RESTAURANT_ID])
+  if (openShifts.rows[0].n > 1) hard.push(`${openShifts.rows[0].n} open shifts (max 1)`)
+
+  const areas = await db.query('SELECT count(*)::int as n FROM areas WHERE restaurant_id=$1', [RESTAURANT_ID])
+  if (areas.rows[0].n < 1) hard.push('No areas exist')
+
+  const stations = await db.query('SELECT count(*)::int as n FROM cash_stations WHERE restaurant_id=$1', [RESTAURANT_ID])
+  if (stations.rows[0].n < 1) hard.push('No cash stations')
+
+  if (areas.rows[0].n < 3) soft.push(`Only ${areas.rows[0].n} areas (expected 3+)`)
+
+  if (soft.length) soft.forEach(w => console.warn(`  ⚠️ PREFLIGHT: ${w}`))
+  if (hard.length) {
+    hard.forEach(e => console.error(`  ❌ PREFLIGHT HARD FAIL: ${e}`))
+    return false
+  }
+  return true
+}
+
+// ── State × Window Transition Matrix ───────────────────────────────
+async function loadShiftState(db, businessDate) {
+  // Check for open shift (any business date)
+  const openShift = await db.query(
+    "SELECT id, opened_at FROM shifts WHERE restaurant_id = $1 AND status = 'OPEN' ORDER BY id DESC LIMIT 1",
+    [RESTAURANT_ID]
+  )
+
+  if (openShift.rows.length > 0) {
+    const shiftBD = getBusinessDate(new Date(openShift.rows[0].opened_at))
+    if (shiftBD === businessDate) {
+      return { state: 'OPEN', shiftId: openShift.rows[0].id, shiftBusinessDate: shiftBD }
+    } else {
+      return { state: 'ZOMBIE', shiftId: openShift.rows[0].id, shiftBusinessDate: shiftBD }
+    }
+  }
+
+  // Check for closed shift of this business date
+  const closedShift = await db.query(
+    `SELECT id FROM shifts WHERE restaurant_id = $1 AND status = 'CLOSED'
+     AND (opened_at AT TIME ZONE 'America/Mexico_City')::date = $2::date
+     ORDER BY id DESC LIMIT 1`,
+    [RESTAURANT_ID, businessDate]
+  )
+  if (closedShift.rows.length > 0) {
+    return { state: 'CLOSED', shiftId: closedShift.rows[0].id, shiftBusinessDate: businessDate }
+  }
+
+  return { state: 'NO_SHIFT', shiftId: null, shiftBusinessDate: null }
+}
+
+function evaluateTransition(shiftState, serviceWindow) {
+  const { state } = shiftState
+
+  // Zombie always gets resolved first
+  if (state === 'ZOMBIE') {
+    return { action: 'CLOSE_ZOMBIE', reason: `Zombie shift from ${shiftState.shiftBusinessDate}` }
+  }
+
+  // State × Window matrix
+  if (state === 'NO_SHIFT') {
+    if (serviceWindow === 'PREP') return { action: 'OPEN_SHIFT', reason: 'Start of business day' }
+    if (serviceWindow === 'CLOSED') return { action: 'SKIP', reason: 'Restaurant closed, no shift needed' }
+    if (serviceWindow === 'CLOSE') return { action: 'SKIP', reason: 'Nothing to close' }
+    return { action: 'ANOMALY', reason: `No shift exists in ${serviceWindow} — should have been opened in PREP` }
+  }
+
+  if (state === 'OPEN') {
+    if (serviceWindow === 'CLOSED') return { action: 'SKIP', reason: 'Restaurant closed, shift stays open for tomorrow PREP zombie guard' }
+    if (serviceWindow === 'PREP') return { action: 'USE_EXISTING_SHIFT', reason: 'Shift already open for today' }
+    if (serviceWindow === 'CLOSE') return { action: 'CLOSE_SHIFT', reason: 'End of business day' }
+    // LUNCH, AFTERNOON, DINNER, LATE_NIGHT
+    return { action: 'GENERATE_ORDERS', reason: `Normal service in ${serviceWindow}` }
+  }
+
+  if (state === 'CLOSED') {
+    if (serviceWindow === 'PREP') {
+      // Is the closed shift from TODAY's business date or a previous one?
+      if (shiftState.shiftBusinessDate === getBusinessDate()) {
+        return { action: 'SKIP', reason: 'Shift already opened and closed today' }
+      }
+      return { action: 'OPEN_SHIFT', reason: 'New business day, previous shift already closed' }
+    }
+    return { action: 'SKIP', reason: `Shift already closed for ${shiftState.shiftBusinessDate}` }
+  }
+
+  return { action: 'SKIP', reason: 'Unknown state' }
+}
+
+// ── Demand Curve & Delta Generation ────────────────────────────────
+const DEMAND_CURVE = {
+  PREP: 0.06,
+  LUNCH: 0.50,
+  AFTERNOON: 0.65,
+  DINNER: 0.92,
+  LATE_NIGHT: 1.00,
+  CLOSE: 1.00,
+  CLOSED: 0.00,
+}
+
+const DAILY_TARGET = {
+  0: 70,  // sunday
+  1: 55,  // monday
+  2: 55,  // tuesday
+  3: 60,  // wednesday
+  4: 65,  // thursday
+  5: 85,  // friday
+  6: 95,  // saturday
+}
+
+function getDailyTarget(businessDate) {
+  const d = new Date(businessDate + 'T12:00:00')
+  const dayOfWeek = d.getDay()
+  const base = DAILY_TARGET[dayOfWeek] || 60
+  // Scale by env
+  if (IS_LOCAL) return Math.round(base * 0.6)
+  if (IS_DEV) return Math.round(base * 0.8)
+  return base
+}
+
+async function getOrderDelta(db, businessDate, serviceWindow) {
+  const target = getDailyTarget(businessDate)
+  const curve = DEMAND_CURVE[serviceWindow] || 0
+  const targetNow = Math.round(target * curve)
+
+  // Count orders in the CURRENT open shift only — not old closed shifts from same business date
+  const openShift = await db.query(
+    "SELECT id FROM shifts WHERE restaurant_id = $1 AND status = 'OPEN' ORDER BY id DESC LIMIT 1",
+    [RESTAURANT_ID]
+  )
+  const existingQuery = openShift.rows[0]?.id
+    ? `SELECT count(*)::int as n FROM orders WHERE restaurant_id = $1 AND shift_id = $2`
+    : `SELECT count(*)::int as n FROM orders WHERE restaurant_id = $1 AND (opened_at AT TIME ZONE 'America/Mexico_City')::date = $2::date`
+  const existingParams = openShift.rows[0]?.id
+    ? [RESTAURANT_ID, openShift.rows[0].id]
+    : [RESTAURANT_ID, businessDate]
+  const existing = await db.query(existingQuery, existingParams)
+  const existingCount = existing.rows[0].n
+
+  const delta = Math.max(0, targetNow - existingCount)
+  const capped = Math.min(delta, MAX_ORDERS_PER_RUN)
+
+  console.log(`  📊 Demand: target=${target} curve=${(curve*100).toFixed(0)}% targetNow=${targetNow} existing=${existingCount} delta=${capped}`)
+  return { target, targetNow, existing: existingCount, delta: capped }
+}
+
+// ── executeOpenShift helper ────────────────────────────────────────
+async function executeOpenShift(db, businessDate) {
+  const hour = getHourMX()
+
+  // Generate schedules
+  for (const dateStr of [businessDate, tomorrow()]) {
+    const existing = await db.query(
+      'SELECT count(*) as cnt FROM attendance_schedules WHERE restaurant_id = $1 AND work_date = $2',
+      [RESTAURANT_ID, dateStr]
+    )
+    if (parseInt(existing.rows[0].cnt) > 5) continue
+    for (const userId of ALL_SCHEDULABLE) {
+      const isDayOff = Math.random() < 0.10
+      const isMorning = Math.random() < 0.5
+      await db.query(`
+        INSERT INTO attendance_schedules (restaurant_id, user_id, work_date, start_time, end_time, tolerance_minutes, is_day_off, source, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, 10, $6, 'simulator', now(), now())
+        ON CONFLICT (restaurant_id, user_id, work_date) DO NOTHING
+      `, [RESTAURANT_ID, userId, dateStr, isMorning ? '09:00:00' : '18:00:00', isMorning ? '18:00:00' : '02:00:00', isDayOff])
+    }
+    console.log(`  📋 Schedules generated for ${dateStr}`)
+  }
+
+  // Open shift
+  const cashier = pick(CASHIERS)
+  const shiftOpenedAt = new Date()
+  const result = await db.query(`
+    INSERT INTO shifts (restaurant_id, master_station_id, user_id, opened_at, status, processed, created_at, updated_at)
+    VALUES ($1, $2, $3, $4, 'OPEN', false, now(), now())
+    RETURNING id
+  `, [RESTAURANT_ID, CASH_STATIONS[0].id, cashier, shiftOpenedAt])
+
+  const shiftId = result.rows[0].id
+  console.log(`  🔓 Shift #${shiftId} opened`)
+
+  await ensureCashSession(db, shiftId, {
+    cashStationId: CASH_STATIONS[0].id,
+    cashUserId: cashier,
+    openedAt: shiftOpenedAt,
+  })
+
+  return shiftId
+}
+
+// ── executeAttendance helper ───────────────────────────────────────
+async function executeAttendance(db, businessDate, serviceWindow) {
+  const hour = getHourMX()
+  let totalCheckIns = 0, totalCheckOuts = 0
+
+  // Check-ins based on window
+  if (serviceWindow === 'PREP' || serviceWindow === 'LUNCH') {
+    for (const groupName of ['dayKitchenEarly', 'dayFloorOpen', 'dayCashierOpen']) {
+      const group = STAFF_GROUPS[groupName]
+      if (!group) continue
+      const result = await simulateRoleCheckIns(db, group, { hour, dateStr: businessDate })
+      totalCheckIns += result.total
+    }
+  }
+  if (serviceWindow === 'DINNER' || serviceWindow === 'LATE_NIGHT') {
+    for (const groupName of ['nightFloor', 'nightKitchen', 'nightCashier']) {
+      const group = STAFF_GROUPS[groupName]
+      if (!group) continue
+      const result = await simulateRoleCheckIns(db, group, { hour, dateStr: businessDate })
+      totalCheckIns += result.total
+    }
+  }
+
+  // Check-outs based on window
+  if (serviceWindow === 'AFTERNOON') {
+    for (const groupName of ['dayFloorOpen', 'dayCashierOpen']) {
+      const group = STAFF_GROUPS[groupName]
+      if (!group) continue
+      const result = await simulateRoleCheckOuts(db, group, { hour, dateStr: businessDate })
+      totalCheckOuts += result.total
+    }
+  }
+  if (serviceWindow === 'LATE_NIGHT' || serviceWindow === 'CLOSE') {
+    for (const groupName of ['nightFloor', 'nightKitchen', 'nightCashier', 'dayKitchenEarly']) {
+      const group = STAFF_GROUPS[groupName]
+      if (!group) continue
+      const result = await simulateRoleCheckOuts(db, group, { hour, dateStr: businessDate })
+      totalCheckOuts += result.total
+    }
+  }
+
+  if (totalCheckIns) console.log(`  👥 Check-ins: ${totalCheckIns}`)
+  if (totalCheckOuts) console.log(`  👋 Check-outs: ${totalCheckOuts}`)
+  return { checkIns: totalCheckIns, checkOuts: totalCheckOuts }
+}
+
 // ── Safety Guards ────────────────────────────────────────────────
 // Hard limit: never create more than this many orders per run
 const MAX_ORDERS_PER_RUN = 25
@@ -97,7 +484,26 @@ async function safetyCheck(db) {
   }
   console.log(`  🛡️ Safety: ${existing}/${MAX_ORDERS_PER_DAY} orders today`)
 
-  // 3. Ensure areas, services, and tables exist (idempotent)
+  // 3. Create sim_runs table if not exists (idempotency lock)
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS sim_runs (
+      id SERIAL PRIMARY KEY,
+      restaurant_id INTEGER NOT NULL,
+      env VARCHAR(20) NOT NULL,
+      business_date DATE NOT NULL,
+      service_window VARCHAR(20) NOT NULL,
+      started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      finished_at TIMESTAMPTZ,
+      status VARCHAR(20) NOT NULL DEFAULT 'running',
+      orders_created INTEGER DEFAULT 0,
+      revenue NUMERIC(12,2) DEFAULT 0,
+      error_message TEXT,
+      created_at TIMESTAMPTZ DEFAULT now(),
+      UNIQUE(restaurant_id, env, business_date, service_window)
+    )
+  `)
+
+  // 4. Ensure areas, services, and tables exist (idempotent)
   const areaCount = await db.query('SELECT count(*)::int as n FROM areas WHERE restaurant_id = $1', [RESTAURANT_ID])
   if (parseInt(areaCount.rows[0].n) < 5) {
     console.log('  🏗️ Creating missing services/areas/tables...')
@@ -184,57 +590,30 @@ function saveSimulatorState(state) {
   const path = simulatorStatePath()
   ensureDir(dirname(path))
   fs.writeFileSync(path, JSON.stringify({
-    envProfile: state.envProfile || ENV_PROFILE,
-    restaurantId: state.restaurantId || RESTAURANT_ID,
+    envProfile: ENV_PROFILE,
+    restaurantId: RESTAURANT_ID,
     updatedAt: new Date().toISOString(),
-    days: Object.fromEntries(Object.entries(state.days || {}).sort(([a], [b]) => a.localeCompare(b))),
+    lastBusinessDate: getBusinessDate(),
+    lastServiceWindow: getServiceWindow(),
   }, null, 2))
 }
 
+/** @deprecated v4 — state is no longer used for decisions. Delete after 2026-05-04. */
 function getDayState(state, businessDate) {
+  if (!state || !state.days) return { shiftIds: [], closedShiftIds: [], handoffCompleted: false, closeNightCompleted: false, groups: {} }
   if (!state.days[businessDate]) {
-    state.days[businessDate] = {
-      shiftIds: [],
-      closedShiftIds: [],
-      phaseRuns: [],
-      handoffCompleted: false,
-      closeNightCompleted: false,
-      groups: {},
-      lastPhase: null,
-      lastRunAt: null,
-    }
+    state.days[businessDate] = { shiftIds: [], closedShiftIds: [], handoffCompleted: false, closeNightCompleted: false, groups: {} }
   }
   return state.days[businessDate]
 }
 
-function markPhaseRun(state, businessDate, phase, meta = {}) {
-  const day = getDayState(state, businessDate)
-  day.phaseRuns.push({ phase, at: new Date().toISOString(), ...meta })
-  day.lastPhase = phase
-  day.lastRunAt = new Date().toISOString()
-}
+/** @deprecated v4 — no-op. Delete after 2026-05-04. */
+function markPhaseRun() {}
 
-function recordGroupProgress(state, businessDate, groupName, kind, count) {
-  if (!count) return
-  const day = getDayState(state, businessDate)
-  if (!day.groups[groupName]) {
-    day.groups[groupName] = {
-      checkIns: 0,
-      checkOuts: 0,
-      lastCheckInAt: null,
-      lastCheckOutAt: null,
-    }
-  }
-  if (kind === 'checkIn') {
-    day.groups[groupName].checkIns += count
-    day.groups[groupName].lastCheckInAt = new Date().toISOString()
-  }
-  if (kind === 'checkOut') {
-    day.groups[groupName].checkOuts += count
-    day.groups[groupName].lastCheckOutAt = new Date().toISOString()
-  }
-}
+/** @deprecated v4 — no-op. Delete after 2026-05-04. */
+function recordGroupProgress() {}
 
+/** @deprecated v4 — only used by old phase functions. Delete after 2026-05-04. */
 function mergePhaseMetrics(...parts) {
   const merged = {
     orders: 0,
@@ -265,9 +644,97 @@ function mergePhaseMetrics(...parts) {
   return merged
 }
 
-// ── Restaurant Data ──────────────────────────────────────────────
+// ── Dynamic Catalog Loader ──────────────────────────────────────
+// PATCH: incident response — load areas/stations/users from DB so we only
+// reference IDs that actually exist. Hardcoded arrays below are FALLBACK defaults.
 
-const AREAS = [
+const ROLE_MAP = {
+  waiter: 'WAITERS', mesero: 'WAITERS',
+  cashier: 'CASHIERS', cajero: 'CASHIERS',
+  chef: 'CHEFS', cocinero: 'CHEFS',
+  bartender: 'BARTENDERS', barman: 'BARTENDERS',
+  churrasqueiro: 'CHURRASQUEIROS', parrillero: 'CHURRASQUEIROS',
+  hostess: 'HOSTESSES', host: 'HOSTESSES', recepcionista: 'HOSTESSES',
+  captain: 'CAPTAINS', capitan: 'CAPTAINS',
+  manager: 'MANAGERS', gerente: 'MANAGERS', admin: 'MANAGERS',
+}
+
+async function loadCatalogsFromDB(db) {
+  try {
+    // 1. Areas
+    const areasRes = await db.query(
+      `SELECT id, name, service_id FROM areas WHERE restaurant_id = $1 ORDER BY id`,
+      [RESTAURANT_ID]
+    )
+    if (areasRes.rows.length > 0) {
+      // Build weight map: keep hardcoded weights for known areas, distribute remainder equally
+      const hardcodedWeights = {}
+      for (const a of AREAS) hardcodedWeights[a.name] = { weight: a.weight, hasTables: a.hasTables }
+      const defaultWeight = 0.05
+      AREAS.length = 0
+      for (const row of areasRes.rows) {
+        const known = hardcodedWeights[row.name]
+        AREAS.push({
+          id: row.id,
+          name: row.name,
+          service_id: row.service_id,
+          weight: known?.weight ?? defaultWeight,
+          hasTables: known?.hasTables ?? true,
+        })
+      }
+      console.log(`  📦 Loaded ${AREAS.length} areas from DB`)
+    } else {
+      console.warn('  ⚠️ No areas in DB — using hardcoded fallback')
+    }
+
+    // 2. Cash stations
+    const stationsRes = await db.query(
+      `SELECT id, name FROM cash_stations WHERE restaurant_id = $1 ORDER BY id`,
+      [RESTAURANT_ID]
+    )
+    if (stationsRes.rows.length > 0) {
+      CASH_STATIONS.length = 0
+      for (const row of stationsRes.rows) {
+        CASH_STATIONS.push({ id: row.id, name: row.name })
+      }
+      console.log(`  📦 Loaded ${CASH_STATIONS.length} cash stations from DB`)
+    } else {
+      console.warn('  ⚠️ No cash stations in DB — using hardcoded fallback')
+    }
+
+    // 3. Users by role
+    const usersRes = await db.query(
+      `SELECT u.id, r.name as role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.restaurant_id = $1 AND u.status = 'active' ORDER BY u.id`,
+      [RESTAURANT_ID]
+    )
+    if (usersRes.rows.length > 0) {
+      const buckets = { WAITERS: [], CASHIERS: [], CHEFS: [], BARTENDERS: [], CHURRASQUEIROS: [], HOSTESSES: [], CAPTAINS: [], MANAGERS: [] }
+      for (const u of usersRes.rows) {
+        const key = ROLE_MAP[(u.role_name || '').toLowerCase()]
+        if (key && buckets[key]) buckets[key].push(u.id)
+      }
+      // Only replace arrays that got at least 1 user; keep fallback otherwise
+      for (const [key, arr] of Object.entries(buckets)) {
+        if (arr.length > 0) {
+          const target = key === 'WAITERS' ? WAITERS : key === 'CASHIERS' ? CASHIERS : key === 'CHEFS' ? CHEFS : key === 'BARTENDERS' ? BARTENDERS : key === 'CHURRASQUEIROS' ? CHURRASQUEIROS : key === 'HOSTESSES' ? HOSTESSES : key === 'CAPTAINS' ? CAPTAINS : MANAGERS
+          target.length = 0
+          target.push(...arr)
+        }
+      }
+      const loaded = Object.entries(buckets).filter(([,a]) => a.length > 0).map(([k,a]) => `${k}:${a.length}`).join(', ')
+      console.log(`  📦 Loaded users from DB: ${loaded}`)
+    } else {
+      console.warn('  ⚠️ No active users in DB — using hardcoded fallback')
+    }
+  } catch (err) {
+    console.error('  ⚠️ loadCatalogsFromDB failed — using hardcoded fallback:', err.message)
+    // Never crash — hardcoded defaults remain in place
+  }
+}
+
+// ── Restaurant Data (hardcoded fallback defaults) ───────────────
+
+let AREAS = [
   // Restaurante (70% del tráfico)
   { id: 186, name: 'Salón Principal', service_id: 46, weight: 0.30, hasTables: true },
   { id: 187, name: 'Terraza', service_id: 46, weight: 0.15, hasTables: true },
@@ -283,19 +750,19 @@ const AREAS = [
   { id: 197, name: 'Salón de Eventos', service_id: 49, weight: 0.05, hasTables: false },
 ]
 
-const CASH_STATIONS = [
+let CASH_STATIONS = [
   { id: 31, name: 'Caja Principal' },
   { id: 32, name: 'Caja Bar' },
 ]
 
-const WAITERS = [7796, 7797, 7798, 7799, 7800, 7801, 7802, 7803, 7804, 7805, 7823, 7824, 7825]
-const CASHIERS = [7806, 7807, 7808]
-const CHEFS = [7809, 7810, 7811]
-const BARTENDERS = [7812, 7813, 7814]
-const CHURRASQUEIROS = [7817, 7818, 7819, 7820, 7821]
-const HOSTESSES = [7815, 7816]
-const CAPTAINS = [7794, 7795]
-const MANAGERS = [7792, 7793]
+let WAITERS = [7796, 7797, 7798, 7799, 7800, 7801, 7802, 7803, 7804, 7805, 7823, 7824, 7825]
+let CASHIERS = [7806, 7807, 7808]
+let CHEFS = [7809, 7810, 7811]
+let BARTENDERS = [7812, 7813, 7814]
+let CHURRASQUEIROS = [7817, 7818, 7819, 7820, 7821]
+let HOSTESSES = [7815, 7816]
+let CAPTAINS = [7794, 7795]
+let MANAGERS = [7792, 7793]
 
 // ── Dev mode: remap all hardcoded IDs ──
 if (IS_DEV && idMap) {
@@ -565,28 +1032,6 @@ function pickWeighted(items) {
   for (const it of items) { c += it.weight; if (r <= c) return it }
   return items[items.length - 1]
 }
-function mxNow() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: MX_TZ }))
-}
-function formatDateYmd(date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-function today() { return formatDateYmd(mxNow()) }
-function tomorrow() {
-  const d = mxNow()
-  d.setDate(d.getDate() + 1)
-  return formatDateYmd(d)
-}
-function businessStartAt(dateStr = today()) {
-  const [year, month, day] = String(dateStr).split('-').map(Number)
-  return new Date(year, month - 1, day, 10, 0, 0, 0)
-}
-function dateInMx(dateValue) {
-  return formatDateYmd(new Date(new Date(dateValue).toLocaleString('en-US', { timeZone: MX_TZ })))
-}
 function normalizeText(v) {
   return String(v || '')
     .normalize('NFD')
@@ -597,18 +1042,11 @@ function hasAnyKeyword(text, keywords = []) {
   const n = normalizeText(text)
   return keywords.some(k => n.includes(normalizeText(k)))
 }
-function getHourMX() {
-  return mxNow().getHours()
-}
 
 function hourInWindow(hour, [start, end]) {
   return start <= end ? hour >= start && hour <= end : hour >= start || hour <= end
 }
 
-function baseTimeForHour(targetHour, dateStr = today()) {
-  const [year, month, day] = String(dateStr).split('-').map(Number)
-  return new Date(year, month - 1, day, targetHour, 0, 0, 0)
-}
 
 function offsetForCheckIn({ earlyBias = false, lateRate = 0.12 }) {
   const isLate = Math.random() < lateRate
@@ -657,7 +1095,7 @@ async function simulateRoleCheckIns(db, group, opts = {}) {
 
     const { isLate, offsetMin } = offsetForCheckIn(group)
     const baseHour = opts.baseHour ?? group.baseHour
-    const baseTime = baseTimeForHour(baseHour, dateStr)
+    const baseTime = mxTimestamp(baseHour, 0, dateStr)
     const eventAt = new Date(baseTime.getTime() + offsetMin * 60000)
     await db.query(`
       INSERT INTO attendance_events (restaurant_id, user_id, event_type, event_method, event_at, event_date, source_context, notes, created_at, updated_at)
@@ -688,7 +1126,7 @@ async function simulateRoleCheckOuts(db, group, opts = {}) {
     if (Math.random() > targetShare) continue
     const userId = Number(row.user_id)
     const checkoutHour = opts.checkoutHour ?? hour
-    const baseTime = baseTimeForHour(checkoutHour, dateStr)
+    const baseTime = mxTimestamp(checkoutHour, 0, dateStr)
     const offset = group.closePreference === 'late' ? rand(5, 55) : rand(-15, 35)
     const checkoutAt = new Date(baseTime.getTime() + offset * 60000)
     await db.query(`
@@ -708,22 +1146,6 @@ async function simulateRoleCheckOuts(db, group, opts = {}) {
   return { total }
 }
 
-function getPhase() {
-  const h = getHourMX()
-  // Every hour generates activity during operating hours
-  if (h === 9 || h === 10)  return 'open'           // 9-10am: abre turno día + attendance
-  if (h === 11)             return 'lunch'           // 11am: primeras órdenes lunch
-  if (h === 12 || h === 13) return 'lunch'           // 12-1pm: pico comida
-  if (h === 14)             return 'lunch'           // 2pm: comida tardía
-  if (h === 15 || h === 16) return 'afternoon'       // 3-4pm: slow + checkout mañana
-  if (h === 17)             return 'afternoon'       // 5pm: última hora turno día
-  if (h === 18)             return 'shift_change'    // 6pm: cierra día + abre noche
-  if (h === 19 || h === 20) return 'dinner'          // 7-8pm: pico cena
-  if (h === 21 || h === 22) return 'late_night'      // 9-10pm: últimas órdenes
-  if (h === 23 || h === 0 || h === 1) return 'late_night' // 11pm-1am: cierre gradual
-  if (h === 2 || h === 3)   return 'close_night'     // 2-3am: cierra noche + corte Z
-  return 'skip'                                       // 4-8am: cerrado
-}
 
 function generateOrderItems(persons) {
   const items = []
@@ -754,7 +1176,7 @@ async function ensureOpenShift(db) {
     console.log('  ⚠️ No open shift — running phaseOpen first')
     return await phaseOpen(db)
   } else {
-    const shiftDate = dateInMx(openShift.rows[0].opened_at)
+    const shiftDate = getBusinessDate(new Date(openShift.rows[0].opened_at))
     const todayStr = today()
     if (shiftDate !== todayStr) {
       console.log(`  🧟 Zombie shift from ${shiftDate} — running phaseOpen to fix`)
@@ -824,15 +1246,24 @@ async function settleOrder(db, order, closedAt = new Date()) {
   const method = pickWeighted(PAYMENT_METHODS)
   const orderTotal = Number(order.total || 0)
   const tip = Number(order.tip || 0)
-  await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','SALE',$4,$5,$6,$7,$4,$4)`,
-    [order.id, method.id, orderTotal, closedAt, shiftId, stationId, cashierId])
 
-  let payments = 1
+  // PATCH: incident response — dedupe payments to prevent double-settle on re-runs
+  let payments = 0
+  const existingSale = await db.query(`SELECT id FROM payments WHERE order_id = $1 AND kind = 'SALE' LIMIT 1`, [order.id])
+  if (existingSale.rows.length === 0) {
+    await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','SALE',$4,$5,$6,$7,$4,$4)`,
+      [order.id, method.id, orderTotal, closedAt, shiftId, stationId, cashierId])
+    payments++
+  }
+
   if (tip > 0) {
-    await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','TIP',$4,$5,$6,$7,$4,$4)`,
-      [order.id, method.id, tip, closedAt, shiftId, stationId, cashierId])
+    const existingTip = await db.query(`SELECT id FROM payments WHERE order_id = $1 AND kind = 'TIP' LIMIT 1`, [order.id])
+    if (existingTip.rows.length === 0) {
+      await db.query(`INSERT INTO payments (order_id, payment_method_id, amount, currency, status, kind, paid_at, shift_id, cash_station_id, cashier_id, created_at, updated_at) VALUES ($1,$2,$3,'MXN','settled','TIP',$4,$5,$6,$7,$4,$4)`,
+        [order.id, method.id, tip, closedAt, shiftId, stationId, cashierId])
+      payments++
+    }
     await db.query(`UPDATE orders SET tip_collected_total = $2, updated_at = now() WHERE id = $1`, [order.id, tip])
-    payments += 1
   }
 
   await db.query(`UPDATE tables SET status = 'free', updated_at = now() WHERE restaurant_id = $1 AND id = (SELECT table_id FROM orders WHERE id = $2)`, [RESTAURANT_ID, order.id])
@@ -843,10 +1274,10 @@ async function settleOpenOrders(db, options = {}) {
   const statuses = options.statuses || ['open', 'printed']
   const query = options.shiftId
     ? `SELECT id, total, tip, shift_id, cash_station_id, cashier_id, opened_at
-       FROM orders WHERE restaurant_id = $1 AND shift_id = $2 AND status = ANY($3::text[])
+       FROM orders WHERE restaurant_id = $1 AND shift_id = $2 AND status::text = ANY($3::text[])
        ORDER BY opened_at ASC`
     : `SELECT id, total, tip, shift_id, cash_station_id, cashier_id, opened_at
-       FROM orders WHERE restaurant_id = $1 AND status = ANY($2::text[])
+       FROM orders WHERE restaurant_id = $1 AND status::text = ANY($2::text[])
        ORDER BY opened_at ASC`
   const params = options.shiftId ? [RESTAURANT_ID, options.shiftId, statuses] : [RESTAURANT_ID, statuses]
   const result = await db.query(query, params)
@@ -872,7 +1303,7 @@ async function finalizeShiftClose(db, shiftId, options = {}) {
   )
   if (shiftRes.rows.length === 0) throw new Error(`Shift ${shiftId} not found`)
   const shift = shiftRes.rows[0]
-  const businessDate = options.businessDate || dateInMx(shift.opened_at || new Date())
+  const businessDate = options.businessDate || getBusinessDate(new Date(shift.opened_at || new Date()))
 
   const totals = await db.query(`
     SELECT count(*) as cnt, coalesce(sum(total),0) as sales,
@@ -894,14 +1325,14 @@ async function finalizeShiftClose(db, shiftId, options = {}) {
   })
 
   for (const pm of byMethod.rows) {
+    // PATCH: DELETE+INSERT — dev DB may lack the UNIQUE constraint that ON CONFLICT requires.
+    // TODO P1: align dev schema, then revert to ON CONFLICT DO UPDATE.
+    await db.query(`DELETE FROM shift_totals WHERE shift_id = $1 AND payment_method_id = $2`, [shiftId, pm.payment_method_id])
     await db.query(`
       INSERT INTO shift_totals (
         shift_id, payment_method_id, sales_count, sales_amount,
         tips_amount, refunds_amount, net_sales_amount, created_at, updated_at
       ) VALUES ($1, $2, $3, $4, 0, 0, $4, now(), now())
-      ON CONFLICT (shift_id, payment_method_id)
-      DO UPDATE SET sales_count = EXCLUDED.sales_count, sales_amount = EXCLUDED.sales_amount,
-                    net_sales_amount = EXCLUDED.sales_amount, updated_at = now()
     `, [shiftId, pm.payment_method_id, pm.cnt, pm.total])
   }
   console.log(`  📊 Shift totals: ${byMethod.rows.length} payment methods`)
@@ -911,14 +1342,14 @@ async function finalizeShiftClose(db, shiftId, options = {}) {
     const isCash = parseInt(pm.payment_method_id, 10) === 1
     const declared = isCash ? expected + rand(-50, 30) : expected
     const diff = Math.round((declared - expected) * 100) / 100
+    // PATCH: DELETE+INSERT — dev DB may lack the UNIQUE constraint.
+    // TODO P1: align dev schema, then revert to ON CONFLICT DO UPDATE.
+    await db.query(`DELETE FROM shift_declarations WHERE shift_id = $1 AND payment_method_id = $2`, [shiftId, pm.payment_method_id])
     await db.query(`
       INSERT INTO shift_declarations (
         shift_id, payment_method_id, expected_amount, declared_amount,
         difference_amount, is_final, cash_session_id, created_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, true, $6, now(), now())
-      ON CONFLICT (shift_id, payment_method_id)
-      DO UPDATE SET expected_amount = EXCLUDED.expected_amount, declared_amount = EXCLUDED.declared_amount,
-                    difference_amount = EXCLUDED.difference_amount, cash_session_id = EXCLUDED.cash_session_id, updated_at = now()
     `, [shiftId, pm.payment_method_id, expected, declared, diff, cashSession.id])
   }
   console.log('  📝 Declarations filed')
@@ -970,12 +1401,18 @@ async function finalizeShiftClose(db, shiftId, options = {}) {
       WHERE id = $1
     `, [closureId, businessDate, shift.opened_at, MANAGERS[0], sales, parseFloat(sales) - parseFloat(tax), tax, cashTotal, cashDifference])
   } else {
+    // PATCH: incident response — ON CONFLICT prevents dup crash on re-runs
     const closureResult = await db.query(`
       INSERT INTO cash_closures (
         restaurant_id, business_date, period_start, period_end,
         generated_by, generated_at, gross_sales, net_sales, total_tax,
         cash_total, difference, created_at, updated_at
       ) VALUES ($1, $2, $3, now(), $4, now(), $5, $6, $7, $8, $9, now(), now())
+      ON CONFLICT (restaurant_id, business_date) DO UPDATE SET
+        period_end = now(), gross_sales = EXCLUDED.gross_sales,
+        net_sales = EXCLUDED.net_sales, total_tax = EXCLUDED.total_tax,
+        cash_total = EXCLUDED.cash_total, difference = EXCLUDED.difference,
+        updated_at = now()
       RETURNING id
     `, [
       RESTAURANT_ID,
@@ -1019,6 +1456,7 @@ async function finalizeShiftClose(db, shiftId, options = {}) {
 
 // ── Phase: OPEN (10am) ───────────────────────────────────────────
 
+/** @deprecated v4 — not called from main(). Delete after 2026-05-04. */
 async function phaseOpen(db) {
   console.log('🌅 PHASE: OPEN — Starting the day')
   const hour = getHourMX()
@@ -1063,7 +1501,7 @@ async function phaseOpen(db) {
     "SELECT id, opened_at FROM shifts WHERE restaurant_id = $1 AND status = 'OPEN'", [RESTAURANT_ID]
   )
   if (openShift.rows.length > 0) {
-    const shiftDate = dateInMx(openShift.rows[0].opened_at)
+    const shiftDate = getBusinessDate(new Date(openShift.rows[0].opened_at))
     if (shiftDate !== todayStr) {
       const zombieId = openShift.rows[0].id
       console.log(`  🧟 Zombie shift #${zombieId} from ${shiftDate} detected — force-closing`)
@@ -1086,14 +1524,15 @@ async function phaseOpen(db) {
   )
   if (currentOpen.rows.length === 0) {
     const closedToday = await db.query(
-      "SELECT id FROM shifts WHERE restaurant_id = $1 AND status = 'CLOSED' AND opened_at::date = $2",
+      // PATCH: incident response — timezone-aware date comparison
+      "SELECT id FROM shifts WHERE restaurant_id = $1 AND status = 'CLOSED' AND (opened_at AT TIME ZONE 'America/Mexico_City')::date = $2",
       [RESTAURANT_ID, todayStr]
     )
     if (closedToday.rows.length > 0) {
       console.log('  ⚠️ Shift already opened and closed today — skipping')
     } else {
       const cashier = pick(CASHIERS)
-      const shiftOpenedAt = baseTimeForHour(hour <= 9 ? 9 : 10, todayStr)
+      const shiftOpenedAt = mxTimestamp(hour <= 9 ? 9 : 10, 0, todayStr)
       shiftOpenedAt.setMinutes(hour <= 9 ? rand(10, 35) : rand(0, 20), 0, 0)
       const result = await db.query(`
         INSERT INTO shifts (restaurant_id, master_station_id, user_id, opened_at, status, processed, created_at, updated_at)
@@ -1128,6 +1567,7 @@ async function phaseOpen(db) {
 
 // ── Phase: LUNCH (1pm) ───────────────────────────────────────────
 
+/** @deprecated v4 — not called from main(). Delete after 2026-05-04. */
 async function phaseLunch(db) {
   console.log('🍽️ PHASE: LUNCH — Peak service')
   const bootstrap = await ensureOpenShift(db)
@@ -1146,6 +1586,7 @@ async function phaseLunch(db) {
 
 // ── Phase: AFTERNOON (4pm) ───────────────────────────────────────
 
+/** @deprecated v4 — not called from main(). Delete after 2026-05-04. */
 async function phaseAfternoon(db) {
   console.log('☕ PHASE: AFTERNOON — Slow period')
   const hour = getHourMX()
@@ -1174,6 +1615,7 @@ async function phaseAfternoon(db) {
 
 // ── Phase: DINNER (7pm) ──────────────────────────────────────────
 
+/** @deprecated v4 — not called from main(). Delete after 2026-05-04. */
 async function phaseDinner(db) {
   console.log('🌙 PHASE: DINNER — Peak service (night shift)')
   const hour = getHourMX()
@@ -1208,6 +1650,7 @@ async function phaseDinner(db) {
 
 // ── Phase: CLOSE (10pm) ──────────────────────────────────────────
 
+/** @deprecated v4 — not called from main(). Delete after 2026-05-04. */
 async function phaseClose(db) {
   console.log('🔒 PHASE: CLOSE — legacy alias → CLOSE_NIGHT')
   return phaseCloseNight(db)
@@ -1215,6 +1658,7 @@ async function phaseClose(db) {
 
 // ── Phase: SHIFT_CHANGE (6pm) — Close day shift, open night shift ──
 
+/** @deprecated v4 — not called from main(). Delete after 2026-05-04. */
 async function phaseShiftChange(db) {
   console.log('🔄 PHASE: SHIFT_CHANGE — Day→Night transition')
   const todayStr = today()
@@ -1252,7 +1696,7 @@ async function phaseShiftChange(db) {
 
   // 4. Open night shift
   const nightCashier = pick(CASHIERS)
-  const nightOpenedAt = baseTimeForHour(18, todayStr)
+  const nightOpenedAt = mxTimestamp(18, 0, todayStr)
   nightOpenedAt.setMinutes(rand(0, 20), 0, 0)
   const nightShift = await db.query(`
     INSERT INTO shifts (restaurant_id, master_station_id, user_id, opened_at, status, processed, created_at, updated_at)
@@ -1294,13 +1738,14 @@ async function phaseShiftChange(db) {
 
 // ── Phase: LATE_NIGHT (10pm) — Last orders of the night ─────────
 
+/** @deprecated v4 — not called from main(). Delete after 2026-05-04. */
 async function phaseLateNight(db) {
   console.log('🌃 PHASE: LATE_NIGHT — Final service')
   const hour = getHourMX()
   const bootstrap = await ensureOpenShift(db)
   await closeLingeringOrders(db)
   const orders = await generateOrders(db, rand(5, 12))
-  const lateNightDate = hour <= 1 ? formatDateYmd(new Date(mxNow().getTime() - 24 * 60 * 60 * 1000)) : today()
+  const lateNightDate = getBusinessDate()
 
   // Guarantee at least 1 void per day
   const voidCountToday = await db.query(
@@ -1317,7 +1762,7 @@ async function phaseLateNight(db) {
     if (candidate.rows.length > 0) {
       const v = candidate.rows[0]
       const cancelReason = pick(['Cliente se fue sin pagar', 'Error de captura', 'Cambio de mesa', 'Duplicada'])
-      await db.query(`UPDATE orders SET status = 'void', cancelled_at = now(), cancelled_by_user_id = $3, cancel_reason = $4, updated_at = now() WHERE id = $1`,
+      await db.query(`UPDATE orders SET status = 'void', cancelled_at = now(), cancelled_by_user_id = $2, cancel_reason = $3, updated_at = now() WHERE id = $1`,
         [v.id, pick(MANAGERS), cancelReason])
       console.log(`  🚫 Forced void: order #${v.id}`)
     }
@@ -1342,12 +1787,12 @@ async function phaseLateNight(db) {
 
 // ── Phase: CLOSE_NIGHT (3am) — Close night shift + Corte Z ──────
 
+/** @deprecated v4 — not called from main(). Delete after 2026-05-04. */
 async function phaseCloseNight(db) {
   console.log('🔒 PHASE: CLOSE_NIGHT — End of night')
   const hour = getHourMX()
-  // Business date = yesterday (since it's 3am, the fiscal day is the previous day)
-  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1)
-  const businessDate = formatDateYmd(yesterday)
+  // Business date = getBusinessDate() handles the 4am cutoff automatically
+  const businessDate = getBusinessDate()
   const dayState = getDayState(db.simState, businessDate)
   if (dayState.closeNightCompleted) {
     console.log('  ℹ️ Night close already completed for business date')
@@ -1404,23 +1849,194 @@ async function phaseCloseNight(db) {
 // Simulates customers finishing their meals and paying between phases.
 // Called at the start of each phase so Operación shows realistic open accounts.
 
+// ── Maintenance Tick (runs every hour, even if window already ran) ──
+// Keeps the restaurant "alive": rotates orders, preserves coverage minimums.
+// NOT blocked by sim_runs — this is operational heartbeat, not window transition.
+async function maintenanceTick(db, serviceWindow) {
+  // Never maintain during CLOSE or CLOSED — those are terminal
+  if (serviceWindow === 'CLOSE' || serviceWindow === 'CLOSED') return
+
+  // Must have an open shift
+  const shiftRes = await db.query(
+    "SELECT id FROM shifts WHERE restaurant_id = $1 AND status = 'OPEN' LIMIT 1",
+    [RESTAURANT_ID]
+  )
+  if (shiftRes.rows.length === 0) return
+
+  const shiftId = shiftRes.rows[0].id
+  const MIN_OPEN = 2
+  const MIN_PRINTED = 2
+  const MIN_ROTATION = 2  // close+replace at least 2 per tick for visual movement
+
+  // 1. Count current active orders
+  const active = await db.query(`
+    SELECT o.id, o.status, o.opened_at, o.area_id, a.name as area_name
+    FROM orders o LEFT JOIN areas a ON o.area_id = a.id
+    WHERE o.restaurant_id = $1 AND o.shift_id = $2 AND o.status IN ('open', 'printed')
+    ORDER BY o.opened_at ASC
+  `, [RESTAURANT_ID, shiftId])
+
+  let openCount = active.rows.filter(r => r.status === 'open').length
+  let printedCount = active.rows.filter(r => r.status === 'printed').length
+  const totalActive = active.rows.length
+
+  console.log(`  🔄 Maintenance: ${totalActive} active (${openCount} open, ${printedCount} printed)`)
+
+  // 2. Close old orders (rotate out) — but NEVER break minimums
+  const now = new Date()
+  const MIN_AGE_MS = 30 * 60 * 1000 // 30 min for maintenance (shorter than closeLingeringOrders)
+  const byArea = {}
+  for (const o of active.rows) {
+    const area = o.area_name || 'unknown'
+    byArea[area] = (byArea[area] || 0) + 1
+  }
+
+  let closed = 0
+  for (const o of active.rows) {
+    if (closed >= MIN_ROTATION) break
+    const ageMs = now.getTime() - new Date(o.opened_at).getTime()
+    if (ageMs < MIN_AGE_MS) continue
+
+    // Check all invariants before closing
+    const area = o.area_name || 'unknown'
+    if ((byArea[area] || 0) <= 1) continue
+    if (o.status === 'open' && openCount <= MIN_OPEN) continue
+    if (o.status === 'printed' && printedCount <= MIN_PRINTED) continue
+    if (totalActive - closed <= (MIN_OPEN + MIN_PRINTED + 1)) break
+
+    // Close this order
+    const closedAt = new Date(now.getTime() - rand(1, 10) * 60000)
+    await settleOrder(db, o, closedAt)
+
+    byArea[area]--
+    if (o.status === 'open') openCount--
+    if (o.status === 'printed') printedCount--
+    closed++
+  }
+  if (closed) console.log(`  🔄 Rotated out: ${closed} orders closed`)
+
+  // 3. Generate replacements to maintain minimums
+  const needOpen = Math.max(0, MIN_OPEN - openCount)
+  const needPrinted = Math.max(0, MIN_PRINTED - printedCount)
+  const needTotal = needOpen + needPrinted + Math.max(0, closed - needOpen - needPrinted)
+
+  if (needTotal > 0) {
+    // Generate replacement orders with forced status
+    const result = await generateOrders(db, needTotal, { noOpen: false, forceActive: true })
+    console.log(`  🔄 Rotated in: ${result?.created || 0} new orders`)
+  }
+
+  // 4. Fix coverage if still below minimums (belt and suspenders)
+  const recheck = await db.query(`
+    SELECT status, count(*)::int as cnt FROM orders
+    WHERE restaurant_id = $1 AND shift_id = $2 AND status IN ('open', 'printed')
+    GROUP BY status
+  `, [RESTAURANT_ID, shiftId])
+
+  const finalOpen = recheck.rows.find(r => r.status === 'open')?.cnt || 0
+  const finalPrinted = recheck.rows.find(r => r.status === 'printed')?.cnt || 0
+
+  // If still short on open, flip some printed → open
+  if (finalOpen < MIN_OPEN && finalPrinted > MIN_PRINTED) {
+    const toFlip = Math.min(MIN_OPEN - finalOpen, finalPrinted - MIN_PRINTED)
+    await db.query(`
+      UPDATE orders SET status = 'open', updated_at = now()
+      WHERE id IN (
+        SELECT id FROM orders WHERE restaurant_id = $1 AND shift_id = $2 AND status = 'printed'
+        ORDER BY opened_at DESC LIMIT $3
+      )
+    `, [RESTAURANT_ID, shiftId, toFlip])
+    if (toFlip) console.log(`  🔄 Flipped ${toFlip} printed → open`)
+  }
+
+  // If still short on printed, flip some open → printed
+  if (finalPrinted < MIN_PRINTED && finalOpen > MIN_OPEN) {
+    const toFlip = Math.min(MIN_PRINTED - finalPrinted, finalOpen - MIN_OPEN)
+    await db.query(`
+      UPDATE orders SET status = 'printed', updated_at = now()
+      WHERE id IN (
+        SELECT id FROM orders WHERE restaurant_id = $1 AND shift_id = $2 AND status = 'open'
+        ORDER BY opened_at ASC LIMIT $3
+      )
+    `, [RESTAURANT_ID, shiftId, toFlip])
+    if (toFlip) console.log(`  🔄 Flipped ${toFlip} open → printed`)
+  }
+
+  console.log(`  ✅ Maintenance done: ${finalOpen >= MIN_OPEN ? '✓' : '✗'} open≥${MIN_OPEN}, ${finalPrinted >= MIN_PRINTED ? '✓' : '✗'} printed≥${MIN_PRINTED}`)
+
+  // Write maintenance artifact
+  try {
+    ensureDir(RUNTIME_ARTIFACT_DIR)
+    const artifactPath = join(RUNTIME_ARTIFACT_DIR, `${new Date().toISOString().replace(/[:.]/g, '-')}-${ENV_PROFILE}-maintenance.json`)
+    fs.writeFileSync(artifactPath, JSON.stringify({
+      type: 'maintenance',
+      envProfile: ENV_PROFILE,
+      businessDate: getBusinessDate(),
+      serviceWindow,
+      restaurantId: RESTAURANT_ID,
+      timestamp: new Date().toISOString(),
+      rotatedOut: closed,
+      rotatedIn: needTotal,
+      coverage: { open: finalOpen, printed: finalPrinted },
+      coverageOk: finalOpen >= MIN_OPEN && finalPrinted >= MIN_PRINTED,
+    }, null, 2))
+  } catch (e) { /* artifact write is best-effort */ }
+}
+
 async function closeLingeringOrders(db) {
   const openOrders = await db.query(`
-    SELECT id, total, tip, shift_id, cash_station_id, cashier_id, waiter_id, opened_at
-    FROM orders
-    WHERE restaurant_id = $1 AND status IN ('open', 'printed')
-    ORDER BY opened_at ASC
+    SELECT o.id, o.status, o.total, o.tip, o.shift_id, o.cash_station_id,
+           o.cashier_id, o.waiter_id, o.opened_at, o.area_id, a.name as area_name
+    FROM orders o
+    LEFT JOIN areas a ON o.area_id = a.id
+    WHERE o.restaurant_id = $1 AND o.status IN ('open', 'printed')
+    ORDER BY o.opened_at ASC
   `, [RESTAURANT_ID])
 
   if (openOrders.rows.length === 0) return 0
 
-  // Close 60-80% of open orders (some stay for next phase — still eating)
-  const toClose = Math.max(1, Math.floor(openOrders.rows.length * (0.6 + Math.random() * 0.2)))
+  // ── Invariantes de cobertura (reglas de negocio del demo) ──
+  // Estas NO son probabilidades — son pisos duros que nunca se rompen.
+  const now = new Date()
+  const MIN_ACTIVE_TOTAL = 5       // nunca bajar de 5 cuentas activas
+  const MIN_OPEN = 2               // siempre ≥2 con status 'open'
+  const MIN_PRINTED = 2            // siempre ≥2 con status 'printed'
+  const MIN_PER_AREA = 1           // nunca vaciar un área completamente
+  const MIN_AGE_MS = 45 * 60 * 1000 // solo cerrar orders de >45 min
+
+  // Count current distribution
+  const byArea = {}
+  let openCount = 0
+  let printedCount = 0
+  for (const o of openOrders.rows) {
+    const area = o.area_name || 'unknown'
+    byArea[area] = (byArea[area] || 0) + 1
+    if (o.status === 'open') openCount++
+    if (o.status === 'printed') printedCount++
+  }
+
+  let remaining = openOrders.rows.length
   let closed = 0
 
-  for (let i = 0; i < toClose && i < openOrders.rows.length; i++) {
-    const o = openOrders.rows[i]
-    const now = new Date()
+  for (const o of openOrders.rows) {
+    // INVARIANT 1: never go below minimum total active
+    if (remaining <= MIN_ACTIVE_TOTAL) break
+
+    // INVARIANT 2: only close orders older than 45 min
+    const ageMs = now.getTime() - new Date(o.opened_at).getTime()
+    if (ageMs < MIN_AGE_MS) continue
+
+    // INVARIANT 3: never empty an area
+    const area = o.area_name || 'unknown'
+    if ((byArea[area] || 0) <= MIN_PER_AREA) continue
+
+    // INVARIANT 4: never go below minimum open
+    if (o.status === 'open' && openCount <= MIN_OPEN) continue
+
+    // INVARIANT 5: never go below minimum printed
+    if (o.status === 'printed' && printedCount <= MIN_PRINTED) continue
+
+    // All invariants pass — close this order
     const openedMs = new Date(o.opened_at).getTime()
     const closedAt = new Date(Math.max(openedMs + rand(30, 90) * 60000, now.getTime() - rand(1, 30) * 60000))
 
@@ -1461,11 +2077,15 @@ async function closeLingeringOrders(db) {
       await db.query(`UPDATE orders SET tip_collected_total = $2, updated_at = now() WHERE id = $1`, [o.id, tip])
     }
 
+    // Update counters after closing
+    byArea[area]--
+    if (o.status === 'open') openCount--
+    if (o.status === 'printed') printedCount--
+    remaining--
     closed++
   }
 
-  const remaining = openOrders.rows.length - closed
-  if (closed) console.log(`  🧾 Closed ${closed} lingering orders (${remaining} still eating)`)
+  if (closed) console.log(`  🧾 Closed ${closed} lingering orders (${remaining} still active: ${openCount} open, ${printedCount} printed)`)
   return closed
 }
 
@@ -1502,6 +2122,8 @@ async function generateOrders(db, count, opts = {}) {
   let total = 0, revenue = 0, payments = 0
 
   for (let i = 0; i < count; i++) {
+    // PATCH: incident response — try-catch per order so one FK violation doesn't kill the batch
+    try {
     const area = pickWeighted(AREAS)
     const waiter = pick(WAITERS)
     const cashier = pick(CASHIERS)
@@ -1545,8 +2167,9 @@ async function generateOrders(db, count, opts = {}) {
     const discAmt = hasDiscount ? Math.round(subtotal * discPct / 100 * 100) / 100 : null
     const discReason = hasDiscount ? pick(['Cortesía gerente', 'Promoción especial', 'Cliente frecuente', 'Evento corporativo']) : null
     const isVoid = Math.random() < 0.02
-    // 25% of orders stay open (customer still eating) — except in close phase
-    const leaveOpen = !isVoid && !opts.noOpen && !forceClose && Math.random() < 0.25
+    // 40% of orders stay active (open or printed) — except in close phase
+    // forceActive: maintenance tick needs ALL replacement orders to stay active
+    const leaveOpen = opts.forceActive ? !isVoid : (!isVoid && !opts.noOpen && !forceClose && Math.random() < 0.40)
 
     const finalSubtotal = hasDiscount ? subtotal - discAmt : subtotal
     const finalTotal = hasDiscount ? orderTotal - discAmt : orderTotal
@@ -1566,8 +2189,11 @@ async function generateOrders(db, count, opts = {}) {
         await db.query(`UPDATE tables SET status = 'busy', updated_at = now() WHERE id = $1`, [tableId])
       }
     } else {
-      // Delivery/takeout: use channel name as tableName
-      tableName = isDelivery ? `${area.name}-${rand(1000, 9999)}` : `PLL-${rand(100, 999)}`
+      // Non-table areas: distinct prefix by type
+      const isEventArea = (area.name || '').toLowerCase().includes('evento')
+      if (isDelivery) tableName = `${area.name}-${rand(1000, 9999)}`
+      else if (isEventArea) tableName = `EVT-${rand(100, 999)}`
+      else tableName = `PLL-${rand(100, 999)}`
     }
 
     const orderResult = await db.query(`
@@ -1585,7 +2211,7 @@ async function generateOrders(db, count, opts = {}) {
       ) RETURNING id
     `, [
       RESTAURANT_ID, station.id, shiftId, waiter, cashier,
-      isVoid ? 'void' : leaveOpen ? (Math.random() < 0.5 ? 'printed' : 'open') : 'closed', openedAt, isVoid ? openedAt : leaveOpen ? null : closedAt,
+      isVoid ? 'void' : leaveOpen ? (Math.random() < 0.5 ? 'open' : 'printed') : 'closed', openedAt, isVoid ? openedAt : leaveOpen ? null : closedAt,
       finalSubtotal, tax, finalTotal, tip,
       persons, area.id, area.service_id,
       hasDiscount ? 'percent' : null, discPct, discReason,
@@ -1670,6 +2296,9 @@ async function generateOrders(db, count, opts = {}) {
 
     total++
     revenue += finalTotal
+    } catch (orderErr) {
+      console.error(`  ⚠️ Order ${i + 1}/${count} failed: ${orderErr.message}`)
+    }
   }
 
   console.log(`  🍽️ Orders: ${total} created, revenue: $${revenue.toFixed(2)}`)
@@ -2025,121 +2654,515 @@ async function simulateInventory(db, phase) {
   return { purchases: purchaseCount, consumptions: consumptionCount, waste: wasteCount }
 }
 
-// ── Main ─────────────────────────────────────────────────────────
+// ── Pipeline Role 1: resolveCalendar ─────────────────────────────
+function resolveCalendar(now = new Date()) {
+  const mx = getMXComponents(now)
+  const businessDate = getBusinessDate(now)
+  const serviceWindow = PHASE_OVERRIDE
+    ? (PHASE_TO_WINDOW[PHASE_OVERRIDE] || PHASE_OVERRIDE.toUpperCase())
+    : getServiceWindow(now)
 
-async function main() {
-  const phase = PHASE_OVERRIDE || getPhase()
-  if (phase === 'skip') {
-    console.log('💤 Restaurant is closed (2am-9am). Skipping.')
-    return
+  return {
+    now,
+    businessDate,
+    serviceWindow,
+    mxHour: mx.hour,
+    mxMinute: mx.minute,
+    isManual: !!PHASE_OVERRIDE,
+    envProfile: ENV_PROFILE,
+    envLabel: IS_LOCAL ? 'LOCAL' : IS_DEV ? 'DEV' : 'PROD',
+  }
+}
+
+// ── Pipeline Role 2: readState ───────────────────────────────────
+async function readState(db, calendar) {
+  // Shift state (already exists as loadShiftState)
+  const shiftState = await loadShiftState(db, calendar.businessDate)
+
+  // Coverage counts (for the current open shift)
+  let coverage = { open: 0, printed: 0, total: 0, byArea: {} }
+  if (shiftState.shiftId && shiftState.state === 'OPEN') {
+    const activeOrders = await db.query(`
+      SELECT o.status, a.name as area_name, count(*)::int as cnt
+      FROM orders o LEFT JOIN areas a ON o.area_id = a.id
+      WHERE o.restaurant_id = $1 AND o.shift_id = $2 AND o.status IN ('open', 'printed')
+      GROUP BY o.status, a.name
+    `, [RESTAURANT_ID, shiftState.shiftId])
+
+    for (const row of activeOrders.rows) {
+      if (row.status === 'open') coverage.open += row.cnt
+      if (row.status === 'printed') coverage.printed += row.cnt
+      coverage.total += row.cnt
+      coverage.byArea[row.area_name] = (coverage.byArea[row.area_name] || 0) + row.cnt
+    }
   }
 
-  const envLabel = IS_LOCAL ? 'LOCAL' : IS_DEV ? 'DEV' : 'PROD'
-  const startedAt = new Date().toISOString()
-  const plan = buildScenarioPlan({
-    phase,
+  // Order count in current shift (for delta calculation)
+  let orderCount = 0
+  if (shiftState.shiftId && shiftState.state === 'OPEN') {
+    const cnt = await db.query(
+      'SELECT count(*)::int as n FROM orders WHERE restaurant_id = $1 AND shift_id = $2',
+      [RESTAURANT_ID, shiftState.shiftId]
+    )
+    orderCount = cnt.rows[0].n
+  }
+
+  // Sim run status
+  const runStatus = await db.query(
+    'SELECT id, status FROM sim_runs WHERE restaurant_id = $1 AND env = $2 AND business_date = $3 AND service_window = $4',
+    [RESTAURANT_ID, ENV_PROFILE, calendar.businessDate, calendar.serviceWindow]
+  )
+  const windowAlreadyRan = runStatus.rows.length > 0 && runStatus.rows[0].status !== 'stale'
+
+  // Daily order count (safety)
+  const dailyCount = await db.query(
+    "SELECT count(*)::int as n FROM orders WHERE restaurant_id = $1 AND ((created_at AT TIME ZONE 'America/Mexico_City')::date = $2)",
+    [RESTAURANT_ID, calendar.businessDate]
+  )
+
+  return {
+    shift: shiftState,
+    coverage,
+    orderCount,
+    windowAlreadyRan,
+    dailyOrderCount: dailyCount.rows[0].n,
+  }
+}
+
+// ── Pipeline Role 3: buildPlan ───────────────────────────────────
+function buildPlan(calendar, state) {
+  const actions = []
+  const { serviceWindow, businessDate } = calendar
+  const { shift, coverage, orderCount, windowAlreadyRan, dailyOrderCount } = state
+  const policy = DEMO_COVERAGE_POLICY[serviceWindow] || DEMO_COVERAGE_POLICY.CLOSED
+
+  // Skip if restaurant closed
+  if (serviceWindow === 'CLOSED' && !calendar.isManual) {
+    actions.push({ type: 'SKIP', reason: 'Restaurant closed (4am-8am)' })
+    return { actions, runType: 'skip', policy }
+  }
+
+  // Safety cap
+  if (dailyOrderCount >= MAX_ORDERS_PER_DAY) {
+    actions.push({ type: 'SKIP', reason: `Daily cap reached: ${dailyOrderCount}/${MAX_ORDERS_PER_DAY}` })
+    return { actions, runType: 'skip', policy }
+  }
+
+  // --- WINDOW RUN (first time this window runs) ---
+  if (!windowAlreadyRan) {
+    actions.push({ type: 'ACQUIRE_WINDOW_LOCK', businessDate, serviceWindow })
+
+    // Zombie resolution
+    if (shift.state === 'ZOMBIE') {
+      actions.push({ type: 'CLOSE_ZOMBIE', shiftId: shift.shiftId, zombieDate: shift.shiftBusinessDate })
+    }
+
+    // Shift management
+    if (shift.state === 'NO_SHIFT' || shift.state === 'ZOMBIE') {
+      if (serviceWindow === 'PREP') {
+        actions.push({ type: 'OPEN_SHIFT' })
+      } else if (serviceWindow !== 'CLOSE' && serviceWindow !== 'CLOSED') {
+        actions.push({ type: 'ANOMALY', reason: `No shift in ${serviceWindow}` })
+      }
+    } else if (shift.state === 'CLOSED') {
+      if (serviceWindow === 'PREP' && shift.shiftBusinessDate !== businessDate) {
+        actions.push({ type: 'OPEN_SHIFT' })
+      } else {
+        actions.push({ type: 'SKIP', reason: 'Shift already closed for this business date' })
+        return { actions, runType: 'skip', policy }
+      }
+    }
+
+    // Close shift in CLOSE window
+    if (serviceWindow === 'CLOSE' && shift.state === 'OPEN') {
+      actions.push({ type: 'SETTLE_ALL_ORDERS' })
+      actions.push({ type: 'CLOSE_SHIFT', shiftId: shift.shiftId, businessDate })
+      actions.push({ type: 'COMPLETE_RESERVATIONS' })
+      actions.push({ type: 'FINAL_ATTENDANCE', businessDate, serviceWindow })
+      actions.push({ type: 'FINAL_INVENTORY', serviceWindow })
+      return { actions, runType: 'window', policy }
+    }
+
+    // Normal service: close lingering + generate delta + attendance + inventory
+    if (shift.state === 'OPEN' || actions.some(a => a.type === 'OPEN_SHIFT')) {
+      actions.push({ type: 'CLOSE_LINGERING' })
+
+      // Calculate delta
+      const target = getDailyTarget(businessDate)
+      const curve = DEMAND_CURVE[serviceWindow] || 0
+      const targetNow = Math.round(target * curve)
+      const delta = Math.max(0, Math.min(targetNow - orderCount, MAX_ORDERS_PER_RUN))
+
+      if (delta > 0) {
+        actions.push({ type: 'GENERATE_ORDERS', count: delta, allowOpen: serviceWindow !== 'CLOSE' })
+      }
+
+      actions.push({ type: 'ATTENDANCE', businessDate, serviceWindow })
+
+      // Reservations
+      if (serviceWindow === 'PREP') actions.push({ type: 'CREATE_RESERVATIONS' })
+      if (serviceWindow === 'DINNER') actions.push({ type: 'SEAT_RESERVATIONS' })
+
+      // Inventory
+      actions.push({ type: 'INVENTORY', serviceWindow })
+    }
+
+    // Ensure coverage at end of window run
+    actions.push({ type: 'ENSURE_COVERAGE', ...policy })
+
+    return { actions, runType: 'window', policy }
+  }
+
+  // --- MAINTENANCE TICK (window already ran) ---
+  if (serviceWindow === 'CLOSE' || serviceWindow === 'CLOSED') {
+    actions.push({ type: 'SKIP', reason: 'Maintenance not needed in CLOSE/CLOSED' })
+    return { actions, runType: 'skip', policy }
+  }
+
+  if (shift.state !== 'OPEN') {
+    actions.push({ type: 'SKIP', reason: 'No open shift for maintenance' })
+    return { actions, runType: 'skip', policy }
+  }
+
+  // Rotation: close old + create new
+  if (policy.rotatePerTick > 0 && coverage.total > policy.minOpen + policy.minPrinted) {
+    actions.push({ type: 'ROTATE_ORDERS', maxClose: policy.rotatePerTick, maxCreate: policy.rotatePerTick,
+      preserveMinOpen: policy.minOpen, preserveMinPrinted: policy.minPrinted })
+  }
+
+  // Coverage enforcement
+  actions.push({ type: 'ENSURE_COVERAGE', ...policy })
+
+  return { actions, runType: 'maintenance', policy }
+}
+
+// ── Pipeline Role 4: executePlan ─────────────────────────────────
+async function executePlan(db, plan, calendar) {
+  const metrics = { orders: 0, revenue: 0, checkIns: 0, checkOuts: 0, errors: [] }
+  let runId = null
+
+  for (const action of plan.actions) {
+    try {
+      console.log(`  ▶ ${action.type}${action.reason ? ': ' + action.reason : ''}`)
+
+      switch (action.type) {
+        case 'SKIP':
+          break
+
+        case 'ANOMALY':
+          console.warn(`  ⚠️ ANOMALY: ${action.reason}`)
+          break
+
+        case 'ACQUIRE_WINDOW_LOCK': {
+          runId = await acquireRunLock(db, action.businessDate, action.serviceWindow)
+          if (!runId) {
+            // Lock failed — switch to maintenance
+            console.log('  ℹ️ Lock not acquired — falling back to maintenance')
+            return metrics
+          }
+          break
+        }
+
+        case 'CLOSE_ZOMBIE':
+          await settleOpenOrders(db, { shiftId: action.shiftId })
+          await finalizeShiftClose(db, action.shiftId, { businessDate: action.zombieDate })
+          console.log(`  🧟 Zombie shift #${action.shiftId} closed`)
+          break
+
+        case 'OPEN_SHIFT':
+          await executeOpenShift(db, calendar.businessDate)
+          break
+
+        case 'CLOSE_LINGERING':
+          await closeLingeringOrders(db)
+          break
+
+        case 'GENERATE_ORDERS': {
+          const result = await generateOrders(db, action.count, { noOpen: !action.allowOpen })
+          metrics.orders += result?.created || 0
+          metrics.revenue += result?.revenue || 0
+          break
+        }
+
+        case 'SETTLE_ALL_ORDERS':
+          await settleOpenOrders(db)
+          break
+
+        case 'CLOSE_SHIFT':
+          await finalizeShiftClose(db, action.shiftId, { businessDate: action.businessDate })
+          console.log(`  🔐 Shift #${action.shiftId} closed`)
+          break
+
+        case 'ATTENDANCE': {
+          const att = await executeAttendance(db, action.businessDate, action.serviceWindow)
+          metrics.checkIns += att.checkIns
+          metrics.checkOuts += att.checkOuts
+          break
+        }
+
+        case 'FINAL_ATTENDANCE': {
+          const att = await executeAttendance(db, action.businessDate, action.serviceWindow)
+          metrics.checkIns += att.checkIns
+          metrics.checkOuts += att.checkOuts
+          break
+        }
+
+        case 'CREATE_RESERVATIONS':
+          await simulateReservations(db, 'open')
+          break
+
+        case 'SEAT_RESERVATIONS':
+          await simulateReservations(db, 'dinner')
+          break
+
+        case 'COMPLETE_RESERVATIONS':
+          await simulateReservations(db, 'close')
+          break
+
+        case 'INVENTORY': {
+          const invPhase = action.serviceWindow === 'PREP' ? 'open' :
+                          action.serviceWindow === 'LUNCH' ? 'lunch' :
+                          action.serviceWindow === 'AFTERNOON' ? 'afternoon' :
+                          action.serviceWindow === 'DINNER' ? 'dinner' : 'close'
+          await simulateInventory(db, invPhase)
+          break
+        }
+
+        case 'FINAL_INVENTORY':
+          await simulateInventory(db, 'close')
+          break
+
+        case 'ROTATE_ORDERS': {
+          // Close some old orders (respecting minimums)
+          const activeOrders = await db.query(`
+            SELECT o.id, o.status, o.total, o.tip, o.shift_id, o.cash_station_id,
+                   o.cashier_id, o.waiter_id, o.opened_at, a.name as area_name
+            FROM orders o LEFT JOIN areas a ON o.area_id = a.id
+            WHERE o.restaurant_id = $1 AND o.status IN ('open', 'printed')
+            ORDER BY o.opened_at ASC
+          `, [RESTAURANT_ID])
+
+          let openCount = activeOrders.rows.filter(r => r.status === 'open').length
+          let printedCount = activeOrders.rows.filter(r => r.status === 'printed').length
+          const byArea = {}
+          for (const o of activeOrders.rows) {
+            byArea[o.area_name || 'unknown'] = (byArea[o.area_name || 'unknown'] || 0) + 1
+          }
+
+          const rotateNow = new Date()
+          let closed = 0
+          for (const o of activeOrders.rows) {
+            if (closed >= action.maxClose) break
+            const ageMs = rotateNow.getTime() - new Date(o.opened_at).getTime()
+            if (ageMs < 30 * 60 * 1000) continue // too young
+            const area = o.area_name || 'unknown'
+            if ((byArea[area] || 0) <= 1) continue
+            if (o.status === 'open' && openCount <= action.preserveMinOpen) continue
+            if (o.status === 'printed' && printedCount <= action.preserveMinPrinted) continue
+            if (activeOrders.rows.length - closed <= action.preserveMinOpen + action.preserveMinPrinted) break
+
+            await settleOrder(db, o, new Date(rotateNow.getTime() - rand(1, 10) * 60000))
+            byArea[area]--
+            if (o.status === 'open') openCount--
+            if (o.status === 'printed') printedCount--
+            closed++
+          }
+          if (closed) console.log(`  🔄 Rotated out: ${closed}`)
+
+          // Generate replacements
+          if (closed > 0) {
+            const result = await generateOrders(db, Math.min(closed, action.maxCreate), { forceActive: true })
+            if (result?.created) console.log(`  🔄 Rotated in: ${result.created}`)
+            metrics.orders += result?.created || 0
+            metrics.revenue += result?.revenue || 0
+          }
+          break
+        }
+
+        case 'ENSURE_COVERAGE': {
+          if (action.minOpen === 0 && action.minPrinted === 0) break // CLOSE window
+
+          const shiftRes = await db.query(
+            "SELECT id FROM shifts WHERE restaurant_id = $1 AND status = 'OPEN' LIMIT 1",
+            [RESTAURANT_ID]
+          )
+          if (!shiftRes.rows.length) break
+          const shiftId = shiftRes.rows[0].id
+
+          const counts = await db.query(`
+            SELECT status, count(*)::int as cnt FROM orders
+            WHERE restaurant_id = $1 AND shift_id = $2 AND status IN ('open', 'printed')
+            GROUP BY status
+          `, [RESTAURANT_ID, shiftId])
+
+          let curOpen = counts.rows.find(r => r.status === 'open')?.cnt || 0
+          let curPrinted = counts.rows.find(r => r.status === 'printed')?.cnt || 0
+
+          // Generate if below minimums
+          const needOpen = Math.max(0, action.minOpen - curOpen)
+          const needPrinted = Math.max(0, action.minPrinted - curPrinted)
+          const need = needOpen + needPrinted
+
+          if (need > 0) {
+            const result = await generateOrders(db, need, { forceActive: true })
+            console.log(`  📋 Coverage: generated ${result?.created || 0} to meet minimums`)
+            metrics.orders += result?.created || 0
+            metrics.revenue += result?.revenue || 0
+          }
+
+          // Recheck and flip if needed
+          const recheck = await db.query(`
+            SELECT status, count(*)::int as cnt FROM orders
+            WHERE restaurant_id = $1 AND shift_id = $2 AND status IN ('open', 'printed')
+            GROUP BY status
+          `, [RESTAURANT_ID, shiftId])
+
+          let finalOpen = recheck.rows.find(r => r.status === 'open')?.cnt || 0
+          let finalPrinted = recheck.rows.find(r => r.status === 'printed')?.cnt || 0
+
+          if (finalOpen < action.minOpen && finalPrinted > action.minPrinted) {
+            const toFlip = Math.min(action.minOpen - finalOpen, finalPrinted - action.minPrinted)
+            if (toFlip > 0) {
+              await db.query(`
+                UPDATE orders SET status = 'open', updated_at = now()
+                WHERE id IN (SELECT id FROM orders WHERE restaurant_id = $1 AND shift_id = $2 AND status = 'printed' ORDER BY opened_at DESC LIMIT $3)
+              `, [RESTAURANT_ID, shiftId, toFlip])
+              console.log(`  🔄 Flipped ${toFlip} printed → open`)
+            }
+          }
+          if (finalPrinted < action.minPrinted && finalOpen > action.minOpen) {
+            const toFlip = Math.min(action.minPrinted - finalPrinted, finalOpen - action.minOpen)
+            if (toFlip > 0) {
+              await db.query(`
+                UPDATE orders SET status = 'printed', updated_at = now()
+                WHERE id IN (SELECT id FROM orders WHERE restaurant_id = $1 AND shift_id = $2 AND status = 'open' ORDER BY opened_at ASC LIMIT $3)
+              `, [RESTAURANT_ID, shiftId, toFlip])
+              console.log(`  🔄 Flipped ${toFlip} open → printed`)
+            }
+          }
+
+          console.log(`  ✅ Coverage: open=${finalOpen}/${action.minOpen} printed=${finalPrinted}/${action.minPrinted}`)
+          break
+        }
+
+        default:
+          console.warn(`  ⚠️ Unknown action: ${action.type}`)
+      }
+    } catch (err) {
+      console.error(`  ❌ Action ${action.type} failed: ${err.message}`)
+      metrics.errors.push({ action: action.type, error: err.message })
+    }
+  }
+
+  // Release window lock if we acquired one
+  if (runId) {
+    const status = metrics.errors.length ? 'error' : 'ok'
+    await releaseRunLock(db, runId, status, { orders: metrics.orders, revenue: metrics.revenue, error: metrics.errors[0]?.error })
+  }
+
+  return metrics
+}
+
+// ── Pipeline Role 5: audit ───────────────────────────────────────
+async function audit(db, calendar, plan, metrics) {
+  const shiftRes = await db.query(
+    "SELECT id, status FROM shifts WHERE restaurant_id = $1 AND status = 'OPEN' LIMIT 1",
+    [RESTAURANT_ID]
+  )
+  const shiftId = shiftRes.rows[0]?.id
+
+  const coverageRes = shiftId ? await db.query(`
+    SELECT status, count(*)::int as cnt FROM orders
+    WHERE restaurant_id = $1 AND shift_id = $2 AND status IN ('open', 'printed')
+    GROUP BY status
+  `, [RESTAURANT_ID, shiftId]) : { rows: [] }
+
+  const finalOpen = coverageRes.rows.find(r => r.status === 'open')?.cnt || 0
+  const finalPrinted = coverageRes.rows.find(r => r.status === 'printed')?.cnt || 0
+
+  const issues = []
+  const policy = plan.policy
+
+  // Only check coverage for non-terminal windows
+  if (calendar.serviceWindow !== 'CLOSE' && calendar.serviceWindow !== 'CLOSED') {
+    if (shiftId && finalOpen < policy.minOpen) issues.push(`open=${finalOpen} < min ${policy.minOpen}`)
+    if (shiftId && finalPrinted < policy.minPrinted) issues.push(`printed=${finalPrinted} < min ${policy.minPrinted}`)
+  }
+
+  const auditResult = {
+    type: plan.runType,
     envProfile: ENV_PROFILE,
+    businessDate: calendar.businessDate,
+    serviceWindow: calendar.serviceWindow,
     restaurantId: RESTAURANT_ID,
-    forcedPhase: Boolean(PHASE_OVERRIDE),
-    generatedAt: startedAt,
-  })
-  const tracker = createRuntimeTracker({
-    envLabel,
-    envProfile: ENV_PROFILE,
-    phase,
-    restaurantId: RESTAURANT_ID,
-    plan,
-    startedAt,
-  })
+    timestamp: new Date().toISOString(),
+    shiftId,
+    shiftStatus: shiftRes.rows[0]?.status || 'none',
+    plan: plan.actions.map(a => a.type),
+    metrics,
+    coverage: { open: finalOpen, printed: finalPrinted },
+    coverageOk: issues.length === 0,
+    issues,
+  }
+
+  // Write artifact
+  const ts = new Date().toISOString().replace(/[:.]/g, '-')
+  const artifactPath = join(RUNTIME_ARTIFACT_DIR, `${ts}-${ENV_PROFILE}-${plan.runType}.json`)
+  ensureDir(RUNTIME_ARTIFACT_DIR)
+  fs.writeFileSync(artifactPath, JSON.stringify(auditResult, null, 2))
+
+  // Write minimal state
+  saveSimulatorState({})
+
+  // Log summary
+  if (issues.length) {
+    console.log(`  ⚠️ Audit: ${issues.join(', ')}`)
+  } else {
+    console.log(`  ✅ Audit: coverage ok (open=${finalOpen}, printed=${finalPrinted})`)
+  }
+
+  return auditResult
+}
+
+// ── Main (v5 — 5-role pipeline) ─────────────────────────────────
+
+async function main() {
   const client = new Client(DB_URL)
-  client.simState = loadSimulatorState()
   await client.connect()
 
-  console.log(`\n🔥 Fogo de Chão Simulator v3 — ${envLabel} — ${startedAt}`)
-  console.log(`📍 Phase: ${phase} (${getHourMX()}:00 MX) | r${RESTAURANT_ID}`)
-  if (PHASE_OVERRIDE) console.log(`🛠️ Phase override requested via --phase=${PHASE_OVERRIDE}`)
-  console.log(`🧠 Scenario: ${scenarioHeadline(plan)}`)
-  console.log('─'.repeat(50))
-
   try {
+    await loadCatalogsFromDB(client)
+
+    // === THE 5-ROLE PIPELINE ===
+    const calendar = resolveCalendar()
+
+    console.log(`\n🔥 Fogo Simulator v5 — ${calendar.envLabel} — ${calendar.now.toISOString()}`)
+    console.log(`📍 Window: ${calendar.serviceWindow} | Business date: ${calendar.businessDate} | r${RESTAURANT_ID}`)
+    if (calendar.isManual) console.log(`🛠️ Override: --phase=${PHASE_OVERRIDE}`)
+    console.log('──────────────────────────────────────────────────')
+
+    // Safety + preflight
     const safe = await safetyCheck(client)
-    if (!safe) {
-      recordRuntimeStep(tracker, 'safety-check', { skipped: true })
-      writeRuntimeArtifact({ outputDir: RUNTIME_ARTIFACT_DIR, tracker, status: 'skipped' })
-      return
-    }
-    recordRuntimeStep(tracker, 'scenario-plan', {
-      expectedCovers: plan.expectedCovers,
-      expectedSalesMin: plan.expectedSalesRange[0],
-      expectedSalesMax: plan.expectedSalesRange[1],
-    })
+    if (!safe) return
+    const preflightOk = await preflight(client)
+    if (!preflightOk) return
 
-    const phaseHandlers = {
-      open: phaseOpen,
-      lunch: phaseLunch,
-      afternoon: phaseAfternoon,
-      shift_change: phaseShiftChange,
-      dinner: phaseDinner,
-      late_night: phaseLateNight,
-      close_night: phaseCloseNight,
-      // Legacy: if old cron sends 'close', treat as close_night
-      close: phaseCloseNight,
-    }
+    const state = await readState(client, calendar)
+    console.log(`  🔍 Shift: ${state.shift.state}${state.shift.shiftId ? ' #' + state.shift.shiftId : ''} | Coverage: ${state.coverage.open}o/${state.coverage.printed}p | Orders: ${state.orderCount} | Daily: ${state.dailyOrderCount}`)
 
-    const phaseSummary = await phaseHandlers[phase](client)
-    const phaseBusinessDate = phase === 'close_night'
-      ? formatDateYmd(new Date(mxNow().getTime() - 24 * 60 * 60 * 1000))
-      : today()
-    markPhaseRun(client.simState, phaseBusinessDate, phaseSummary.name, {
-      forced: Boolean(PHASE_OVERRIDE),
-      hour: getHourMX(),
-    })
-    saveSimulatorState(client.simState)
-    recordRuntimeStep(tracker, phaseSummary.name, phaseSummary)
+    const plan = buildPlan(calendar, state)
+    console.log(`  🧭 Plan: ${plan.runType} — ${plan.actions.map(a => a.type).join(' → ')}`)
 
-    // Run inventory simulation after each phase
-    const inventorySummary = await simulateInventory(client, phase)
-    recordRuntimeStep(tracker, 'inventory', {
-      inventoryPurchases: inventorySummary.purchases,
-      inventoryConsumptions: inventorySummary.consumptions,
-      inventoryWaste: inventorySummary.waste,
-      skipped: Boolean(inventorySummary.skipped),
-    })
+    const metrics = await executePlan(client, plan, calendar)
 
-    // Run reservations simulation after each phase
-    const reservationsSummary = await simulateReservations(client, phase)
-    recordRuntimeStep(tracker, 'reservations', {
-      reservations: reservationsSummary.reservations,
-    })
+    const auditResult = await audit(client, calendar, plan, metrics)
 
-    const verification = await verifyRuntimeConsistency(client, {
-      restaurantId: RESTAURANT_ID,
-      phase,
-      plan,
-      envProfile: ENV_PROFILE,
-      runObserved: tracker.totals,
-    })
-    setRuntimeVerification(tracker, verification)
-    recordRuntimeStep(tracker, 'consistency-verifier', {
-      ok: verification.ok,
-      runIssueCount: verification.runConsistency.issues.length,
-      runWarningCount: verification.runConsistency.warnings.length,
-      dayIssueCount: verification.dayHealth.issues.length,
-      dayWarningCount: verification.dayHealth.warnings.length,
-    })
-
-    const artifact = writeRuntimeArtifact({ outputDir: RUNTIME_ARTIFACT_DIR, tracker })
-
-    console.log('─'.repeat(50))
-    console.log(`📝 Artifact: ${join(RUNTIME_ARTIFACT_DIR, `last-${ENV_PROFILE}.json`)}`)
-    console.log(`📊 Runtime totals: ${artifact.totals.orders} orders, $${artifact.totals.revenue.toFixed(2)} revenue, ${artifact.totals.attendanceEvents} attendance events`)
-    console.log(`🧪 Run consistency: ${verification.runConsistency.ok ? 'OK' : 'ISSUES'} (${verification.runConsistency.issues.length} issues, ${verification.runConsistency.warnings.length} warnings)`)
-    console.log(`🩺 Day health: ${verification.dayHealth.ok ? 'OK' : 'ISSUES'} (${verification.dayHealth.issues.length} issues, ${verification.dayHealth.warnings.length} warnings)`)
-    console.log('✅ Simulation complete\n')
+    console.log('──────────────────────────────────────────────────')
+    console.log(`📊 ${plan.runType}: ${metrics.orders} orders, $${(metrics.revenue || 0).toFixed(2)} revenue`)
+    console.log(`✅ Complete`)
   } catch (err) {
-    writeRuntimeArtifact({ outputDir: RUNTIME_ARTIFACT_DIR, tracker, status: 'error', error: err })
-    console.error('❌ Error:', err.message)
-    throw err
+    console.error(`❌ Error: ${err.message}`)
+    console.error(err.stack)
   } finally {
     await client.end()
   }

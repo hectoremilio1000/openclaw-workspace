@@ -1,0 +1,30 @@
+{
+  "type": "window",
+  "envProfile": "local",
+  "businessDate": "2026-04-21",
+  "serviceWindow": "AFTERNOON",
+  "restaurantId": 40,
+  "timestamp": "2026-04-21T21:01:21.244Z",
+  "shiftId": 111232,
+  "shiftStatus": "OPEN",
+  "plan": [
+    "ACQUIRE_WINDOW_LOCK",
+    "CLOSE_LINGERING",
+    "ATTENDANCE",
+    "INVENTORY",
+    "ENSURE_COVERAGE"
+  ],
+  "metrics": {
+    "orders": 0,
+    "revenue": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "errors": []
+  },
+  "coverage": {
+    "open": 3,
+    "printed": 4
+  },
+  "coverageOk": true,
+  "issues": []
+}

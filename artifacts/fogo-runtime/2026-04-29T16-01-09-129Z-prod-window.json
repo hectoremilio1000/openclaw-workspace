@@ -1,0 +1,31 @@
+{
+  "type": "window",
+  "envProfile": "prod",
+  "businessDate": "2026-04-29",
+  "serviceWindow": "LUNCH",
+  "restaurantId": 40,
+  "timestamp": "2026-04-29T16:01:09.129Z",
+  "shiftId": 118266,
+  "shiftStatus": "OPEN",
+  "plan": [
+    "ACQUIRE_WINDOW_LOCK",
+    "CLOSE_LINGERING",
+    "GENERATE_ORDERS",
+    "ATTENDANCE",
+    "INVENTORY",
+    "ENSURE_COVERAGE"
+  ],
+  "metrics": {
+    "orders": 22,
+    "revenue": 102120.59999999999,
+    "checkIns": 4,
+    "checkOuts": 0,
+    "errors": []
+  },
+  "coverage": {
+    "open": 7,
+    "printed": 5
+  },
+  "coverageOk": true,
+  "issues": []
+}

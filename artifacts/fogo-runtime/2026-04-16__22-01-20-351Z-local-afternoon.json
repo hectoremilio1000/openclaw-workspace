@@ -1,0 +1,142 @@
+{
+  "status": "ok",
+  "envLabel": "LOCAL",
+  "envProfile": "local",
+  "phase": "afternoon",
+  "restaurantId": 40,
+  "startedAt": "2026-04-16T22:01:20.094Z",
+  "finishedAt": "2026-04-16T22:01:20.351Z",
+  "plan": {
+    "phase": "afternoon",
+    "scenario": "midday_reset",
+    "serviceProfile": "slow_recovery",
+    "expectedCovers": 18,
+    "expectedSalesRange": [
+      20000,
+      55000
+    ],
+    "expectedOrdersRange": [
+      6,
+      11
+    ],
+    "attendanceIncidents": [
+      "early_checkout"
+    ],
+    "inventoryPressure": [
+      "salad_bar",
+      "desserts"
+    ],
+    "operationalRisks": [
+      "open_orders_stale",
+      "staff_gap"
+    ],
+    "restaurantId": 40,
+    "envProfile": "local",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-16T22:01:20.094Z"
+  },
+  "verification": {
+    "ok": false,
+    "businessDate": "2026-04-16",
+    "envProfile": "local",
+    "phase": "afternoon",
+    "runConsistency": {
+      "ok": false,
+      "summary": {
+        "orders": 14,
+        "revenue": 57872.4,
+        "checkIns": 0,
+        "checkOuts": 18,
+        "shiftsOpened": 0,
+        "shiftsClosed": 0,
+        "inventoryPurchases": 0,
+        "inventoryConsumptions": 4,
+        "inventoryWaste": 0
+      },
+      "issues": [
+        "run has more check-outs (18) than check-ins (0)"
+      ],
+      "warnings": [
+        "run orders 14 are above expected max 11"
+      ]
+    },
+    "dayHealth": {
+      "ok": true,
+      "summary": {
+        "openShiftCount": 1,
+        "checkIns": 18,
+        "checkOuts": 18,
+        "orders": 67,
+        "revenue": 360960.8,
+        "openOrders": 0,
+        "negativeInventoryItems": 12
+      },
+      "issues": [],
+      "warnings": [
+        "12 inventory items have negative cumulative balance"
+      ]
+    },
+    "issues": [
+      "run has more check-outs (18) than check-ins (0)"
+    ],
+    "warnings": [
+      "run orders 14 are above expected max 11",
+      "12 inventory items have negative cumulative balance"
+    ]
+  },
+  "totals": {
+    "orders": 14,
+    "revenue": 57872.4,
+    "schedules": 0,
+    "attendanceEvents": 18,
+    "checkIns": 0,
+    "checkOuts": 18,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 23,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 4,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 18,
+      "expectedSalesMin": 20000,
+      "expectedSalesMax": 55000
+    },
+    {
+      "name": "afternoon",
+      "orders": 14,
+      "revenue": 57872.4,
+      "payments": 23,
+      "schedules": 0,
+      "attendanceEvents": 18,
+      "checkIns": 0,
+      "checkOuts": 18,
+      "lateCheckIns": 0,
+      "shiftsOpened": 0,
+      "shiftsClosed": 0
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 0,
+      "inventoryConsumptions": 4,
+      "inventoryWaste": 0,
+      "skipped": false
+    },
+    {
+      "name": "reservations",
+      "reservations": 0
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": false,
+      "runIssueCount": 1,
+      "runWarningCount": 1,
+      "dayIssueCount": 0,
+      "dayWarningCount": 1
+    }
+  ],
+  "error": null
+}

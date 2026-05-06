@@ -1,15 +1,27 @@
-# CLAUDE.md - GrowthSuite Project Rules
+# GrowthSuite — Decision log & plan estratégico v2
 
-> **Knowledge hub:** Este archivo son las reglas del proyecto GrowthSuite.  
-> Para el contexto completo (reglas globales, patterns, decisiones), lee también:
+> **Este archivo vive como decision log + plan estratégico** (blueprint v2, migration plan Phase 0-5, ceiling table, when-to-rewrite).
+>
+> El **estado operativo vigente** del proyecto está en `CLAUDE.md` del repo (`/Users/hectorvelasquez/proyectos/growthsuite/CLAUDE.md`). Ambos archivos tienen audiencias y cadencias de actualización distintas y **NO son espejo**: este preserva el pensamiento estratégico (yo dentro de 3 meses), el otro refleja HOY (Claude Code en cada sesión).
 >
 > - `~/.openclaw/workspace/knowledge/README.md` — hub index
 > - `~/.openclaw/workspace/knowledge/claude-rules/global.md` — reglas globales de Héctor
-> - `~/.openclaw/workspace/knowledge/claude-rules/per-project/growthsuite.md` — copia sincronizada de este archivo
 > - `~/.openclaw/workspace/knowledge/agent-patterns/` — patterns aplicables (strangler-fig, policy-engine, multi-tenant-isolation, tool-calling-vs-keywords)
 > - `~/.openclaw/workspace/knowledge/decisions/` — decision log (G12, Strangler Fig, Sprint Track 1)
->
-> Todo el knowledge hub se sincroniza automáticamente con la otra Mac vía `github.com/hectoremilio1000/openclaw-workspace` (cron cada 2h).
+
+---
+
+## Estado actual (snapshot 2026-04-21)
+
+> **Resumen operativo del momento.** Para detalle vigente y reglas operativas del repo, ver `CLAUDE.md` en la raíz del proyecto (`/Users/hectorvelasquez/proyectos/growthsuite/CLAUDE.md`). Este bloque queda stale rápido — la fecha en el título es el indicador.
+
+- **Eval 1505 preguntas (local):** 75.1% (1131/1505), 0 errores. Latencia avg 3166ms / P95 5545ms.
+- **Strangler Fig:** Fases 1-5 completadas el 2026-04-20. `classify.ts` reducido de 613 a 209 líneas; brain es el pipeline principal.
+- **Categorías débiles (<70%):** Cat B Productos 62.5%, Cat J Meseros 64.0%, Cat E Inventario 65.5%, Cat G Caja/turnos 69.8%.
+- **P0 abiertos:** migración `bot_events` pendiente; G12 cross-tenant pendiente de reconfirmación post-Fases.
+- **Bug fix Apr 20-21:** Cat C crash (property names en `buildCancellationsReport`) → 12.9% → 91.4%.
+
+El plan estratégico v2 y migration plan Phase 0-5 (abajo) siguen siendo el norte; este snapshot indica dónde estamos en ese plan.
 
 ---
 
@@ -283,7 +295,7 @@ Cost: ~$25 USD, 8-12h. Pending user approval to generate sample first.
 - Provider: `test-harness`
 
 **Test restaurants:**
-- Fogo de Chão Santa Fe (id=40) — clean data, fresh credentials. Pairing: `778899`. Owner: `ricardo.mendes@fogodechao.com.mx` / `secret123`. PINs generated: cashiers `400001-400003`, waiters `500001-500013`, owner `900001`.
+- Fogo de Chão Santa Fe (id=40) — clean data, fresh credentials. Pairing: `778899`. Owner login exists for testing; keep the actual password in local-only storage (for example `TOOLS.md`), not in git. PINs generated: cashiers `400001-400003`, waiters `500001-500013`, owner `900001`.
 - La Llorona 2 (id=13) — real historical data
 - Café de Tacuba (id=7) — small case
 

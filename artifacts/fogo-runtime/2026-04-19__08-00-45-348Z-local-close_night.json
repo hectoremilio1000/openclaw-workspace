@@ -1,0 +1,66 @@
+{
+  "status": "error",
+  "envLabel": "LOCAL",
+  "envProfile": "local",
+  "phase": "close_night",
+  "restaurantId": 40,
+  "startedAt": "2026-04-19T08:00:45.268Z",
+  "finishedAt": "2026-04-19T08:00:45.348Z",
+  "plan": {
+    "phase": "open",
+    "scenario": "opening_ramp",
+    "serviceProfile": "prep_and_open",
+    "expectedCovers": 14,
+    "expectedSalesRange": [
+      40000,
+      80000
+    ],
+    "expectedOrdersRange": [
+      5,
+      8
+    ],
+    "attendanceIncidents": [
+      "late_waiter"
+    ],
+    "inventoryPressure": [
+      "produce",
+      "bar_prep",
+      "pantry"
+    ],
+    "operationalRisks": [
+      "zombie_shift",
+      "cash_session_missing"
+    ],
+    "restaurantId": 40,
+    "envProfile": "local",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-19T08:00:45.268Z"
+  },
+  "verification": null,
+  "totals": {
+    "orders": 0,
+    "revenue": 0,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 0,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 14,
+      "expectedSalesMin": 40000,
+      "expectedSalesMax": 80000
+    }
+  ],
+  "error": {
+    "message": "duplicate key value violates unique constraint \"cash_closures_restaurant_id_business_date_unique\"",
+    "stack": "error: duplicate key value violates unique constraint \"cash_closures_restaurant_id_business_date_unique\"\n    at /Users/hectorvelasquez/.openclaw/workspace/scripts/node_modules/pg/lib/client.js:631:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async finalizeShiftClose (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:824:27)\n    at async Object.phaseCloseNight (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:1374:20)\n    at async main (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:2084:26)"
+  }
+}

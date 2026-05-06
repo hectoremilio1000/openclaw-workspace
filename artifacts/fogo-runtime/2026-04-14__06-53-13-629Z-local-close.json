@@ -1,0 +1,103 @@
+{
+  "status": "ok",
+  "envLabel": "LOCAL",
+  "envProfile": "local",
+  "phase": "close",
+  "restaurantId": 40,
+  "startedAt": "2026-04-14T06:53:13.567Z",
+  "finishedAt": "2026-04-14T06:53:13.629Z",
+  "plan": {
+    "phase": "close",
+    "scenario": "day_closeout",
+    "serviceProfile": "settlement_and_close",
+    "expectedCovers": 12,
+    "expectedSalesRange": [
+      6000,
+      28000
+    ],
+    "expectedOrdersRange": [
+      4,
+      8
+    ],
+    "attendanceIncidents": [
+      "early_checkout"
+    ],
+    "inventoryPressure": [
+      "waste_review",
+      "replenishment_candidates"
+    ],
+    "operationalRisks": [
+      "open_orders_at_close",
+      "cash_difference"
+    ],
+    "restaurantId": 40,
+    "envProfile": "local",
+    "forcedPhase": true,
+    "generatedAt": "2026-04-14T06:53:13.567Z"
+  },
+  "verification": {
+    "ok": true,
+    "businessDate": "2026-04-14",
+    "envProfile": "local",
+    "phase": "close",
+    "summary": {
+      "orders": 139,
+      "revenue": 790293.6,
+      "openOrders": 0,
+      "checkIns": 19,
+      "checkOuts": 0,
+      "openShiftCount": 0,
+      "negativeInventoryItems": 17
+    },
+    "issues": [],
+    "warnings": [
+      "17 inventory items have negative cumulative balance",
+      "revenue 790293.60 is above expected max 28000",
+      "orders 139 are above expected max 8"
+    ]
+  },
+  "totals": {
+    "orders": 0,
+    "revenue": 0,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 0,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 5,
+    "inventoryWaste": 1
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 12,
+      "expectedSalesMin": 6000,
+      "expectedSalesMax": 28000
+    },
+    {
+      "name": "close",
+      "shiftsClosed": 0,
+      "orders": 0,
+      "revenue": 0,
+      "payments": 0,
+      "skipped": true
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 0,
+      "inventoryConsumptions": 5,
+      "inventoryWaste": 1,
+      "skipped": false
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": true,
+      "issueCount": 0,
+      "warningCount": 3
+    }
+  ],
+  "error": null
+}

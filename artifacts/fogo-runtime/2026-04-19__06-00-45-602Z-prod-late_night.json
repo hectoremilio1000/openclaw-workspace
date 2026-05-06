@@ -1,0 +1,66 @@
+{
+  "status": "error",
+  "envLabel": "PROD",
+  "envProfile": "prod",
+  "phase": "late_night",
+  "restaurantId": 40,
+  "startedAt": "2026-04-19T06:00:21.478Z",
+  "finishedAt": "2026-04-19T06:00:45.602Z",
+  "plan": {
+    "phase": "open",
+    "scenario": "opening_ramp",
+    "serviceProfile": "prep_and_open",
+    "expectedCovers": 24,
+    "expectedSalesRange": [
+      55000,
+      95000
+    ],
+    "expectedOrdersRange": [
+      8,
+      14
+    ],
+    "attendanceIncidents": [
+      "late_waiter"
+    ],
+    "inventoryPressure": [
+      "produce",
+      "bar_prep",
+      "pantry"
+    ],
+    "operationalRisks": [
+      "zombie_shift",
+      "cash_session_missing"
+    ],
+    "restaurantId": 40,
+    "envProfile": "prod",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-19T06:00:21.478Z"
+  },
+  "verification": null,
+  "totals": {
+    "orders": 0,
+    "revenue": 0,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 0,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 24,
+      "expectedSalesMin": 55000,
+      "expectedSalesMax": 95000
+    }
+  ],
+  "error": {
+    "message": "insert or update on table \"orders\" violates foreign key constraint \"orders_area_id_foreign\"",
+    "stack": "error: insert or update on table \"orders\" violates foreign key constraint \"orders_area_id_foreign\"\n    at /Users/hectorvelasquez/.openclaw/workspace/scripts/node_modules/pg/lib/client.js:631:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async generateOrders (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:1569:25)\n    at async phaseOpen (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:956:70)\n    at async ensureOpenShift (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:671:14)\n    at async Object.phaseLateNight [as late_night] (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:1290:21)\n    at async main (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:2084:26)"
+  }
+}

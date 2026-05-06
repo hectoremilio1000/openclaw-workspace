@@ -1,0 +1,27 @@
+{
+  "type": "window",
+  "envProfile": "prod",
+  "businessDate": "2026-04-30",
+  "serviceWindow": "AFTERNOON",
+  "restaurantId": 40,
+  "timestamp": "2026-04-30T21:23:06.739Z",
+  "shiftStatus": "none",
+  "plan": [
+    "ACQUIRE_WINDOW_LOCK",
+    "ANOMALY",
+    "ENSURE_COVERAGE"
+  ],
+  "metrics": {
+    "orders": 0,
+    "revenue": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "errors": []
+  },
+  "coverage": {
+    "open": 0,
+    "printed": 0
+  },
+  "coverageOk": true,
+  "issues": []
+}

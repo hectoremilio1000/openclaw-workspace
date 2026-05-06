@@ -3,12 +3,14 @@
     "whatsapp": 1745721947,
     "pos_backends": 1745721960,
     "pos_database": 1745721960,
-    "pos_frontends": null
+    "pos_frontends": null,
+    "async_exec_events": 1777881630
   },
   "lastStatus": {
     "whatsapp": "⚠️ Command not available",
     "pos_backends": "✅ All 9 services healthy (200)",
     "pos_database": "✅ Connected - 81 orders last 24h",
-    "pos_frontends": "⏳ Due for check"
+    "pos_frontends": "⏳ Due for check",
+    "async_exec_events": "✅ wild-ced and rapid-re completed successfully; gateway/help output observed and WhatsApp send via gateway reported handledBy core"
   }
 }

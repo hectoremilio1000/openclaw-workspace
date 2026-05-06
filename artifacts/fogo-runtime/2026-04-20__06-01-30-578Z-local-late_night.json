@@ -1,0 +1,145 @@
+{
+  "status": "ok",
+  "envLabel": "LOCAL",
+  "envProfile": "local",
+  "phase": "late_night",
+  "restaurantId": 40,
+  "startedAt": "2026-04-20T06:01:30.150Z",
+  "finishedAt": "2026-04-20T06:01:30.578Z",
+  "plan": {
+    "phase": "open",
+    "scenario": "opening_ramp",
+    "serviceProfile": "prep_and_open",
+    "expectedCovers": 14,
+    "expectedSalesRange": [
+      40000,
+      80000
+    ],
+    "expectedOrdersRange": [
+      5,
+      8
+    ],
+    "attendanceIncidents": [
+      "late_waiter"
+    ],
+    "inventoryPressure": [
+      "produce",
+      "bar_prep",
+      "pantry"
+    ],
+    "operationalRisks": [
+      "zombie_shift",
+      "cash_session_missing"
+    ],
+    "restaurantId": 40,
+    "envProfile": "local",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-20T06:01:30.150Z"
+  },
+  "verification": {
+    "ok": false,
+    "businessDate": "2026-04-20",
+    "envProfile": "local",
+    "phase": "late_night",
+    "runConsistency": {
+      "ok": true,
+      "summary": {
+        "orders": 14,
+        "revenue": 73457,
+        "checkIns": 0,
+        "checkOuts": 0,
+        "shiftsOpened": 1,
+        "shiftsClosed": 0,
+        "inventoryPurchases": 0,
+        "inventoryConsumptions": 0,
+        "inventoryWaste": 0
+      },
+      "issues": [],
+      "warnings": [
+        "run created 14 orders without new attendance check-ins in this execution",
+        "run orders 14 are above expected max 8"
+      ]
+    },
+    "dayHealth": {
+      "ok": false,
+      "summary": {
+        "openShiftCount": 1,
+        "checkIns": 0,
+        "checkOuts": 0,
+        "orders": 14,
+        "revenue": 73457,
+        "openOrders": 2,
+        "negativeInventoryItems": 11
+      },
+      "issues": [
+        "orders exist (14) but there are no attendance check-ins for 2026-04-20"
+      ],
+      "warnings": [
+        "11 inventory items have negative cumulative balance"
+      ]
+    },
+    "issues": [
+      "orders exist (14) but there are no attendance check-ins for 2026-04-20"
+    ],
+    "warnings": [
+      "run created 14 orders without new attendance check-ins in this execution",
+      "run orders 14 are above expected max 8",
+      "11 inventory items have negative cumulative balance"
+    ]
+  },
+  "totals": {
+    "orders": 14,
+    "revenue": 73457,
+    "schedules": 33,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 1,
+    "shiftsClosed": 0,
+    "payments": 14,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 14,
+      "expectedSalesMin": 40000,
+      "expectedSalesMax": 80000
+    },
+    {
+      "name": "late_night",
+      "orders": 14,
+      "revenue": 73457,
+      "payments": 14,
+      "schedules": 33,
+      "attendanceEvents": 0,
+      "checkIns": 0,
+      "checkOuts": 0,
+      "lateCheckIns": 0,
+      "shiftsOpened": 1,
+      "shiftsClosed": 0
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 0,
+      "inventoryConsumptions": 0,
+      "inventoryWaste": 0,
+      "skipped": false
+    },
+    {
+      "name": "reservations",
+      "reservations": 0
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": false,
+      "runIssueCount": 0,
+      "runWarningCount": 2,
+      "dayIssueCount": 1,
+      "dayWarningCount": 1
+    }
+  ],
+  "error": null
+}

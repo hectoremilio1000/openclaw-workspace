@@ -1,0 +1,67 @@
+{
+  "status": "error",
+  "envLabel": "PROD",
+  "envProfile": "prod",
+  "phase": "lunch",
+  "restaurantId": 40,
+  "startedAt": "2026-04-19T17:00:19.825Z",
+  "finishedAt": "2026-04-19T17:00:25.114Z",
+  "plan": {
+    "phase": "lunch",
+    "scenario": "lunch_peak",
+    "serviceProfile": "high_turnover",
+    "expectedCovers": 118,
+    "expectedSalesRange": [
+      180000,
+      320000
+    ],
+    "expectedOrdersRange": [
+      41,
+      71
+    ],
+    "attendanceIncidents": [
+      "late_waiter",
+      "absent_hostess"
+    ],
+    "inventoryPressure": [
+      "premium_cuts",
+      "sides",
+      "wine"
+    ],
+    "operationalRisks": [
+      "queue_growth",
+      "discount_pressure"
+    ],
+    "restaurantId": 40,
+    "envProfile": "prod",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-19T17:00:19.825Z"
+  },
+  "verification": null,
+  "totals": {
+    "orders": 0,
+    "revenue": 0,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 0,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 118,
+      "expectedSalesMin": 180000,
+      "expectedSalesMax": 320000
+    }
+  ],
+  "error": {
+    "message": "insert or update on table \"orders\" violates foreign key constraint \"orders_area_id_foreign\"",
+    "stack": "error: insert or update on table \"orders\" violates foreign key constraint \"orders_area_id_foreign\"\n    at /Users/hectorvelasquez/.openclaw/workspace/scripts/node_modules/pg/lib/client.js:631:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async generateOrders (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:1569:25)\n    at async Object.phaseLunch [as lunch] (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:978:18)\n    at async main (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:2084:26)"
+  }
+}

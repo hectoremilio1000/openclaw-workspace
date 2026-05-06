@@ -1,0 +1,147 @@
+{
+  "status": "ok",
+  "envLabel": "DEV",
+  "envProfile": "dev",
+  "phase": "late_night",
+  "restaurantId": 9,
+  "startedAt": "2026-04-20T07:00:45.160Z",
+  "finishedAt": "2026-04-20T07:00:52.544Z",
+  "plan": {
+    "phase": "open",
+    "scenario": "opening_ramp",
+    "serviceProfile": "prep_and_open",
+    "expectedCovers": 16,
+    "expectedSalesRange": [
+      45000,
+      90000
+    ],
+    "expectedOrdersRange": [
+      6,
+      10
+    ],
+    "attendanceIncidents": [
+      "late_waiter"
+    ],
+    "inventoryPressure": [
+      "produce",
+      "bar_prep",
+      "pantry"
+    ],
+    "operationalRisks": [
+      "zombie_shift",
+      "cash_session_missing"
+    ],
+    "restaurantId": 9,
+    "envProfile": "dev",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-20T07:00:45.160Z"
+  },
+  "verification": {
+    "ok": false,
+    "businessDate": "2026-04-20",
+    "envProfile": "dev",
+    "phase": "late_night",
+    "runConsistency": {
+      "ok": true,
+      "summary": {
+        "orders": 0,
+        "revenue": 0,
+        "checkIns": 0,
+        "checkOuts": 0,
+        "shiftsOpened": 0,
+        "shiftsClosed": 0,
+        "inventoryPurchases": 0,
+        "inventoryConsumptions": 0,
+        "inventoryWaste": 0
+      },
+      "issues": [],
+      "warnings": [
+        "run revenue 0.00 is below expected min 45000",
+        "run orders 0 are below expected min 6"
+      ]
+    },
+    "dayHealth": {
+      "ok": false,
+      "summary": {
+        "openShiftCount": 1,
+        "checkIns": 0,
+        "checkOuts": 0,
+        "orders": 20,
+        "revenue": 123262.6,
+        "openOrders": 1,
+        "negativeInventoryItems": 18
+      },
+      "issues": [
+        "5 settled payments look impossible vs order totals",
+        "orders exist (20) but there are no attendance check-ins for 2026-04-20"
+      ],
+      "warnings": [
+        "18 inventory items have negative cumulative balance"
+      ]
+    },
+    "issues": [
+      "5 settled payments look impossible vs order totals",
+      "orders exist (20) but there are no attendance check-ins for 2026-04-20"
+    ],
+    "warnings": [
+      "run revenue 0.00 is below expected min 45000",
+      "run orders 0 are below expected min 6",
+      "18 inventory items have negative cumulative balance"
+    ]
+  },
+  "totals": {
+    "orders": 0,
+    "revenue": 0,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 0,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 16,
+      "expectedSalesMin": 45000,
+      "expectedSalesMax": 90000
+    },
+    {
+      "name": "late_night",
+      "orders": 0,
+      "revenue": 0,
+      "payments": 0,
+      "schedules": 0,
+      "attendanceEvents": 0,
+      "checkIns": 0,
+      "checkOuts": 0,
+      "lateCheckIns": 0,
+      "shiftsOpened": 0,
+      "shiftsClosed": 0
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 0,
+      "inventoryConsumptions": 0,
+      "inventoryWaste": 0,
+      "skipped": false
+    },
+    {
+      "name": "reservations",
+      "reservations": 0
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": false,
+      "runIssueCount": 0,
+      "runWarningCount": 2,
+      "dayIssueCount": 2,
+      "dayWarningCount": 1
+    }
+  ],
+  "error": null
+}

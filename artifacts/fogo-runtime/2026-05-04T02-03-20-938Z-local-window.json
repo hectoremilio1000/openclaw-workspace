@@ -1,0 +1,27 @@
+{
+  "type": "window",
+  "envProfile": "local",
+  "businessDate": "2026-05-03",
+  "serviceWindow": "DINNER",
+  "restaurantId": 40,
+  "timestamp": "2026-05-04T02:03:20.938Z",
+  "shiftStatus": "none",
+  "plan": [
+    "ACQUIRE_WINDOW_LOCK",
+    "ANOMALY",
+    "ENSURE_COVERAGE"
+  ],
+  "metrics": {
+    "orders": 0,
+    "revenue": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "errors": []
+  },
+  "coverage": {
+    "open": 0,
+    "printed": 0
+  },
+  "coverageOk": true,
+  "issues": []
+}

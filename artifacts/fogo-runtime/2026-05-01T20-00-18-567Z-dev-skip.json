@@ -1,0 +1,25 @@
+{
+  "type": "skip",
+  "envProfile": "dev",
+  "businessDate": "2026-05-01",
+  "serviceWindow": "LUNCH",
+  "restaurantId": 9,
+  "timestamp": "2026-05-01T20:00:18.567Z",
+  "shiftStatus": "none",
+  "plan": [
+    "SKIP"
+  ],
+  "metrics": {
+    "orders": 0,
+    "revenue": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "errors": []
+  },
+  "coverage": {
+    "open": 0,
+    "printed": 0
+  },
+  "coverageOk": true,
+  "issues": []
+}

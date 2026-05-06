@@ -1,0 +1,146 @@
+{
+  "status": "ok",
+  "envLabel": "PROD",
+  "envProfile": "prod",
+  "phase": "dinner",
+  "restaurantId": 40,
+  "startedAt": "2026-04-20T02:00:38.119Z",
+  "finishedAt": "2026-04-20T02:00:54.909Z",
+  "plan": {
+    "phase": "dinner",
+    "scenario": "dinner_peak",
+    "serviceProfile": "premium_service",
+    "expectedCovers": 126,
+    "expectedSalesRange": [
+      190000,
+      340000
+    ],
+    "expectedOrdersRange": [
+      44,
+      76
+    ],
+    "attendanceIncidents": [
+      "late_bartender",
+      "coverage_swap"
+    ],
+    "inventoryPressure": [
+      "premium_cuts",
+      "cocktails",
+      "desserts"
+    ],
+    "operationalRisks": [
+      "ticket_backlog",
+      "cash_station_pressure"
+    ],
+    "restaurantId": 40,
+    "envProfile": "prod",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-20T02:00:38.119Z"
+  },
+  "verification": {
+    "ok": false,
+    "businessDate": "2026-04-19",
+    "envProfile": "prod",
+    "phase": "dinner",
+    "runConsistency": {
+      "ok": true,
+      "summary": {
+        "orders": 17,
+        "revenue": 93223.4,
+        "checkIns": 0,
+        "checkOuts": 0,
+        "shiftsOpened": 0,
+        "shiftsClosed": 0,
+        "inventoryPurchases": 0,
+        "inventoryConsumptions": 12,
+        "inventoryWaste": 0
+      },
+      "issues": [],
+      "warnings": [
+        "run revenue 93223.40 is below expected min 190000",
+        "run orders 17 are below expected min 44"
+      ]
+    },
+    "dayHealth": {
+      "ok": false,
+      "summary": {
+        "openShiftCount": 1,
+        "checkIns": 27,
+        "checkOuts": 11,
+        "orders": 84,
+        "revenue": 357259.4,
+        "openOrders": 1,
+        "negativeInventoryItems": 8
+      },
+      "issues": [
+        "1 settled payments look impossible vs order totals"
+      ],
+      "warnings": [
+        "8 inventory items have negative cumulative balance"
+      ]
+    },
+    "issues": [
+      "1 settled payments look impossible vs order totals"
+    ],
+    "warnings": [
+      "run revenue 93223.40 is below expected min 190000",
+      "run orders 17 are below expected min 44",
+      "8 inventory items have negative cumulative balance"
+    ]
+  },
+  "totals": {
+    "orders": 17,
+    "revenue": 93223.4,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 24,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 12,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 126,
+      "expectedSalesMin": 190000,
+      "expectedSalesMax": 340000
+    },
+    {
+      "name": "dinner",
+      "orders": 17,
+      "revenue": 93223.4,
+      "payments": 24,
+      "schedules": 0,
+      "attendanceEvents": 0,
+      "checkIns": 0,
+      "checkOuts": 0,
+      "lateCheckIns": 0,
+      "shiftsOpened": 0,
+      "shiftsClosed": 0
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 0,
+      "inventoryConsumptions": 12,
+      "inventoryWaste": 0,
+      "skipped": false
+    },
+    {
+      "name": "reservations",
+      "reservations": 0
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": false,
+      "runIssueCount": 0,
+      "runWarningCount": 2,
+      "dayIssueCount": 1,
+      "dayWarningCount": 1
+    }
+  ],
+  "error": null
+}

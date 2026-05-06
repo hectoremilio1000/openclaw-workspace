@@ -1,0 +1,144 @@
+{
+  "status": "ok",
+  "envLabel": "LOCAL",
+  "envProfile": "local",
+  "phase": "afternoon",
+  "restaurantId": 40,
+  "startedAt": "2026-04-19T21:02:35.217Z",
+  "finishedAt": "2026-04-19T21:02:35.367Z",
+  "plan": {
+    "phase": "afternoon",
+    "scenario": "midday_reset",
+    "serviceProfile": "slow_recovery",
+    "expectedCovers": 18,
+    "expectedSalesRange": [
+      20000,
+      55000
+    ],
+    "expectedOrdersRange": [
+      6,
+      11
+    ],
+    "attendanceIncidents": [
+      "early_checkout"
+    ],
+    "inventoryPressure": [
+      "salad_bar",
+      "desserts"
+    ],
+    "operationalRisks": [
+      "open_orders_stale",
+      "staff_gap"
+    ],
+    "restaurantId": 40,
+    "envProfile": "local",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-19T21:02:35.217Z"
+  },
+  "verification": {
+    "ok": false,
+    "businessDate": "2026-04-19",
+    "envProfile": "local",
+    "phase": "afternoon",
+    "runConsistency": {
+      "ok": true,
+      "summary": {
+        "orders": 0,
+        "revenue": 0,
+        "checkIns": 0,
+        "checkOuts": 0,
+        "shiftsOpened": 0,
+        "shiftsClosed": 0,
+        "inventoryPurchases": 0,
+        "inventoryConsumptions": 4,
+        "inventoryWaste": 0
+      },
+      "issues": [],
+      "warnings": [
+        "run revenue 0.00 is below expected min 20000",
+        "run orders 0 are below expected min 6"
+      ]
+    },
+    "dayHealth": {
+      "ok": false,
+      "summary": {
+        "openShiftCount": 0,
+        "checkIns": 20,
+        "checkOuts": 0,
+        "orders": 62,
+        "revenue": 316766.75,
+        "openOrders": 0,
+        "negativeInventoryItems": 11
+      },
+      "issues": [
+        "phase afternoon has no open shift in day state"
+      ],
+      "warnings": [
+        "11 inventory items have negative cumulative balance"
+      ]
+    },
+    "issues": [
+      "phase afternoon has no open shift in day state"
+    ],
+    "warnings": [
+      "run revenue 0.00 is below expected min 20000",
+      "run orders 0 are below expected min 6",
+      "11 inventory items have negative cumulative balance"
+    ]
+  },
+  "totals": {
+    "orders": 0,
+    "revenue": 0,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 0,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 4,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 18,
+      "expectedSalesMin": 20000,
+      "expectedSalesMax": 55000
+    },
+    {
+      "name": "afternoon",
+      "orders": 0,
+      "revenue": 0,
+      "payments": 0,
+      "schedules": 0,
+      "attendanceEvents": 0,
+      "checkIns": 0,
+      "checkOuts": 0,
+      "lateCheckIns": 0,
+      "shiftsOpened": 0,
+      "shiftsClosed": 0
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 0,
+      "inventoryConsumptions": 4,
+      "inventoryWaste": 0,
+      "skipped": false
+    },
+    {
+      "name": "reservations",
+      "reservations": 0
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": false,
+      "runIssueCount": 0,
+      "runWarningCount": 2,
+      "dayIssueCount": 1,
+      "dayWarningCount": 1
+    }
+  ],
+  "error": null
+}

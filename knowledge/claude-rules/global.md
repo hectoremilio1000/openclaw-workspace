@@ -18,9 +18,10 @@ These rules apply to **every** Claude Code session, in every project, on this ma
 
 - **Branches:** siempre `hector_dev/<descriptive-name>` (ej: `hector_dev/fix-bot-cross-tenant-g12`).
 - **NUNCA push/merge sin autorización explícita mía.** Siempre preguntas antes.
-- **NUNCA `--delete-branch`** al hacer PR merge con `gh`. Conserva las ramas.
+- **NUNCA borrar branches después de merge. Siempre mantenerlos.** Esto incluye `--delete-branch` con `gh pr merge`, `git branch -d/-D` local, y `git push --delete origin <branch>` o el botón "Delete branch" en GitHub. La rama queda como historial.
 - **Verifica branch antes de commitear** con `git branch --show-current`.
 - **Commits convencionales** con body descriptivo.
+- **Política de promoción:** TODAS las branches (`hector_dev/*`, `fix/*`, `feat/*`, etc.) van `→ dev → main`. **Nada directo a `main`.** Razón: `dev` es el gate de testing y mantiene el invariante "dev nunca atrás de main" para promociones limpias. Si alguna vez se mergea algo directo a `main` (urgencia), el siguiente paso obligatorio es PR `main → dev` para restaurar el invariante.
 
 ## 3. Archivos protegidos
 

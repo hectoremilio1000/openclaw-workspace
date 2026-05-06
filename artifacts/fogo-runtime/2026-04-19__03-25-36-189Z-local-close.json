@@ -1,0 +1,65 @@
+{
+  "status": "error",
+  "envLabel": "LOCAL",
+  "envProfile": "local",
+  "phase": "close",
+  "restaurantId": 40,
+  "startedAt": "2026-04-19T03:25:36.099Z",
+  "finishedAt": "2026-04-19T03:25:36.189Z",
+  "plan": {
+    "phase": "close",
+    "scenario": "day_closeout",
+    "serviceProfile": "settlement_and_close",
+    "expectedCovers": 12,
+    "expectedSalesRange": [
+      6000,
+      28000
+    ],
+    "expectedOrdersRange": [
+      4,
+      8
+    ],
+    "attendanceIncidents": [
+      "early_checkout"
+    ],
+    "inventoryPressure": [
+      "waste_review",
+      "replenishment_candidates"
+    ],
+    "operationalRisks": [
+      "open_orders_at_close",
+      "cash_difference"
+    ],
+    "restaurantId": 40,
+    "envProfile": "local",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-19T03:25:36.099Z"
+  },
+  "verification": null,
+  "totals": {
+    "orders": 0,
+    "revenue": 0,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 0,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 12,
+      "expectedSalesMin": 6000,
+      "expectedSalesMax": 28000
+    }
+  ],
+  "error": {
+    "message": "null value in column \"cash_station_id\" of relation \"payments\" violates not-null constraint",
+    "stack": "error: null value in column \"cash_station_id\" of relation \"payments\" violates not-null constraint\n    at /Users/hectorvelasquez/.openclaw/workspace/scripts/node_modules/pg/lib/client.js:631:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async Object.phaseClose [as close] (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:1055:5)\n    at async main (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:1776:26)"
+  }
+}

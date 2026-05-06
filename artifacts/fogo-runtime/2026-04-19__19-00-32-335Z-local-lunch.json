@@ -1,0 +1,67 @@
+{
+  "status": "error",
+  "envLabel": "LOCAL",
+  "envProfile": "local",
+  "phase": "lunch",
+  "restaurantId": 40,
+  "startedAt": "2026-04-19T19:00:32.256Z",
+  "finishedAt": "2026-04-19T19:00:32.335Z",
+  "plan": {
+    "phase": "lunch",
+    "scenario": "lunch_peak",
+    "serviceProfile": "high_turnover",
+    "expectedCovers": 74,
+    "expectedSalesRange": [
+      140000,
+      260000
+    ],
+    "expectedOrdersRange": [
+      26,
+      44
+    ],
+    "attendanceIncidents": [
+      "late_waiter",
+      "absent_hostess"
+    ],
+    "inventoryPressure": [
+      "premium_cuts",
+      "sides",
+      "wine"
+    ],
+    "operationalRisks": [
+      "queue_growth",
+      "discount_pressure"
+    ],
+    "restaurantId": 40,
+    "envProfile": "local",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-19T19:00:32.256Z"
+  },
+  "verification": null,
+  "totals": {
+    "orders": 0,
+    "revenue": 0,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 0,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 74,
+      "expectedSalesMin": 140000,
+      "expectedSalesMax": 260000
+    }
+  ],
+  "error": {
+    "message": "duplicate key value violates unique constraint \"cash_closures_restaurant_id_business_date_unique\"",
+    "stack": "error: duplicate key value violates unique constraint \"cash_closures_restaurant_id_business_date_unique\"\n    at /Users/hectorvelasquez/.openclaw/workspace/scripts/node_modules/pg/lib/client.js:631:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async finalizeShiftClose (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:824:27)\n    at async phaseOpen (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:918:22)\n    at async ensureOpenShift (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:671:14)\n    at async Object.phaseLunch [as lunch] (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:975:21)\n    at async main (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:2084:26)"
+  }
+}

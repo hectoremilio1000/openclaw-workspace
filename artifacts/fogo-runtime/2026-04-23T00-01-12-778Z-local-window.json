@@ -1,0 +1,32 @@
+{
+  "type": "window",
+  "envProfile": "local",
+  "businessDate": "2026-04-22",
+  "serviceWindow": "DINNER",
+  "restaurantId": 40,
+  "timestamp": "2026-04-23T00:01:12.778Z",
+  "shiftId": 111233,
+  "shiftStatus": "OPEN",
+  "plan": [
+    "ACQUIRE_WINDOW_LOCK",
+    "CLOSE_LINGERING",
+    "GENERATE_ORDERS",
+    "ATTENDANCE",
+    "SEAT_RESERVATIONS",
+    "INVENTORY",
+    "ENSURE_COVERAGE"
+  ],
+  "metrics": {
+    "orders": 7,
+    "revenue": 26279.800000000003,
+    "checkIns": 11,
+    "checkOuts": 0,
+    "errors": []
+  },
+  "coverage": {
+    "open": 4,
+    "printed": 6
+  },
+  "coverageOk": true,
+  "issues": []
+}

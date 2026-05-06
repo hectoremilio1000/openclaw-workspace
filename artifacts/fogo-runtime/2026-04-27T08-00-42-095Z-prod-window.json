@@ -1,0 +1,30 @@
+{
+  "type": "window",
+  "envProfile": "prod",
+  "businessDate": "2026-04-26",
+  "serviceWindow": "CLOSE",
+  "restaurantId": 40,
+  "timestamp": "2026-04-27T08:00:42.095Z",
+  "shiftStatus": "none",
+  "plan": [
+    "ACQUIRE_WINDOW_LOCK",
+    "SETTLE_ALL_ORDERS",
+    "CLOSE_SHIFT",
+    "COMPLETE_RESERVATIONS",
+    "FINAL_ATTENDANCE",
+    "FINAL_INVENTORY"
+  ],
+  "metrics": {
+    "orders": 0,
+    "revenue": 0,
+    "checkIns": 0,
+    "checkOuts": 3,
+    "errors": []
+  },
+  "coverage": {
+    "open": 0,
+    "printed": 0
+  },
+  "coverageOk": true,
+  "issues": []
+}

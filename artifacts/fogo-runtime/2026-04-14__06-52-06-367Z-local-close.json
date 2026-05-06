@@ -1,0 +1,81 @@
+{
+  "status": "error",
+  "envLabel": "LOCAL",
+  "envProfile": "local",
+  "phase": "close",
+  "restaurantId": 40,
+  "startedAt": "2026-04-14T06:52:06.168Z",
+  "finishedAt": "2026-04-14T06:52:06.367Z",
+  "plan": {
+    "phase": "close",
+    "scenario": "day_closeout",
+    "serviceProfile": "settlement_and_close",
+    "expectedCovers": 12,
+    "expectedSalesRange": [
+      6000,
+      28000
+    ],
+    "expectedOrdersRange": [
+      4,
+      8
+    ],
+    "attendanceIncidents": [
+      "early_checkout"
+    ],
+    "inventoryPressure": [
+      "waste_review",
+      "replenishment_candidates"
+    ],
+    "operationalRisks": [
+      "open_orders_at_close",
+      "cash_difference"
+    ],
+    "restaurantId": 40,
+    "envProfile": "local",
+    "forcedPhase": true,
+    "generatedAt": "2026-04-14T06:52:06.168Z"
+  },
+  "verification": null,
+  "totals": {
+    "orders": 11,
+    "revenue": 59481,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 1,
+    "payments": 12,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 3,
+    "inventoryWaste": 3
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 12,
+      "expectedSalesMin": 6000,
+      "expectedSalesMax": 28000
+    },
+    {
+      "name": "close",
+      "attendanceEvents": 0,
+      "checkOuts": 0,
+      "shiftsClosed": 1,
+      "orders": 11,
+      "revenue": 59480.99999999999,
+      "payments": 12
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 0,
+      "inventoryConsumptions": 3,
+      "inventoryWaste": 3,
+      "skipped": false
+    }
+  ],
+  "error": {
+    "message": "invalid input value for enum orders_status_enum: \"cancelled\"",
+    "stack": "error: invalid input value for enum orders_status_enum: \"cancelled\"\n    at /Users/hectorvelasquez/.openclaw/workspace/scripts/node_modules/pg/lib/client.js:631:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async Promise.all (index 1)\n    at async verifyRuntimeConsistency (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-runtime/consistency-verifier.mjs:19:127)\n    at async main (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:1320:26)"
+  }
+}

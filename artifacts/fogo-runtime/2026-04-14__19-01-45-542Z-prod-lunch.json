@@ -1,0 +1,137 @@
+{
+  "status": "ok",
+  "envLabel": "PROD",
+  "envProfile": "prod",
+  "phase": "lunch",
+  "restaurantId": 40,
+  "startedAt": "2026-04-14T19:00:16.170Z",
+  "finishedAt": "2026-04-14T19:01:45.542Z",
+  "plan": {
+    "phase": "lunch",
+    "scenario": "lunch_peak",
+    "serviceProfile": "high_turnover",
+    "expectedCovers": 118,
+    "expectedSalesRange": [
+      180000,
+      320000
+    ],
+    "expectedOrdersRange": [
+      41,
+      71
+    ],
+    "attendanceIncidents": [
+      "late_waiter",
+      "absent_hostess"
+    ],
+    "inventoryPressure": [
+      "premium_cuts",
+      "sides",
+      "wine"
+    ],
+    "operationalRisks": [
+      "queue_growth",
+      "discount_pressure"
+    ],
+    "restaurantId": 40,
+    "envProfile": "prod",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-14T19:00:16.170Z"
+  },
+  "verification": {
+    "ok": false,
+    "businessDate": "2026-04-14",
+    "envProfile": "prod",
+    "phase": "lunch",
+    "runConsistency": {
+      "ok": true,
+      "summary": {
+        "orders": 41,
+        "revenue": 261930.4,
+        "checkIns": 0,
+        "checkOuts": 0,
+        "shiftsOpened": 0,
+        "shiftsClosed": 0,
+        "inventoryPurchases": 14,
+        "inventoryConsumptions": 0,
+        "inventoryWaste": 0
+      },
+      "issues": [],
+      "warnings": []
+    },
+    "dayHealth": {
+      "ok": false,
+      "summary": {
+        "openShiftCount": 1,
+        "checkIns": 38,
+        "checkOuts": 0,
+        "orders": 106,
+        "revenue": 634875.1,
+        "openOrders": 0,
+        "negativeInventoryItems": 13
+      },
+      "issues": [
+        "12 open-order records attached to closed shifts"
+      ],
+      "warnings": [
+        "13 inventory items have negative cumulative balance"
+      ]
+    },
+    "issues": [
+      "12 open-order records attached to closed shifts"
+    ],
+    "warnings": [
+      "13 inventory items have negative cumulative balance"
+    ]
+  },
+  "totals": {
+    "orders": 41,
+    "revenue": 261930.4,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 40,
+    "inventoryPurchases": 14,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 118,
+      "expectedSalesMin": 180000,
+      "expectedSalesMax": 320000
+    },
+    {
+      "name": "lunch",
+      "orders": 41,
+      "revenue": 261930.4,
+      "payments": 40,
+      "schedules": 0,
+      "attendanceEvents": 0,
+      "checkIns": 0,
+      "checkOuts": 0,
+      "lateCheckIns": 0,
+      "shiftsOpened": 0,
+      "shiftsClosed": 0
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 14,
+      "inventoryConsumptions": 0,
+      "inventoryWaste": 0,
+      "skipped": false
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": false,
+      "runIssueCount": 0,
+      "runWarningCount": 0,
+      "dayIssueCount": 1,
+      "dayWarningCount": 1
+    }
+  ],
+  "error": null
+}

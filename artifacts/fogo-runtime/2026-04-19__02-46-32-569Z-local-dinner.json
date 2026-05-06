@@ -1,0 +1,67 @@
+{
+  "status": "error",
+  "envLabel": "LOCAL",
+  "envProfile": "local",
+  "phase": "dinner",
+  "restaurantId": 40,
+  "startedAt": "2026-04-19T02:46:32.539Z",
+  "finishedAt": "2026-04-19T02:46:32.569Z",
+  "plan": {
+    "phase": "dinner",
+    "scenario": "dinner_peak",
+    "serviceProfile": "premium_service",
+    "expectedCovers": 78,
+    "expectedSalesRange": [
+      150000,
+      280000
+    ],
+    "expectedOrdersRange": [
+      27,
+      47
+    ],
+    "attendanceIncidents": [
+      "late_bartender",
+      "coverage_swap"
+    ],
+    "inventoryPressure": [
+      "premium_cuts",
+      "cocktails",
+      "desserts"
+    ],
+    "operationalRisks": [
+      "ticket_backlog",
+      "cash_station_pressure"
+    ],
+    "restaurantId": 40,
+    "envProfile": "local",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-19T02:46:32.539Z"
+  },
+  "verification": null,
+  "totals": {
+    "orders": 0,
+    "revenue": 0,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 0,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 78,
+      "expectedSalesMin": 150000,
+      "expectedSalesMax": 280000
+    }
+  ],
+  "error": {
+    "message": "new row for relation \"tables\" violates check constraint \"tables_status_check\"",
+    "stack": "error: new row for relation \"tables\" violates check constraint \"tables_status_check\"\n    at /Users/hectorvelasquez/.openclaw/workspace/scripts/node_modules/pg/lib/client.js:631:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async generateOrders (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:1255:7)\n    at async Object.phaseDinner [as dinner] (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:943:18)\n    at async main (file:///Users/hectorvelasquez/.openclaw/workspace/scripts/fogo-simulator.mjs:1747:26)"
+  }
+}

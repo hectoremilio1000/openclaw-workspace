@@ -1,5 +1,8 @@
 {
-  "lastTested": "C",
-  "testedAt": "2026-04-13T06:33:27Z",
-  "nextCategory": "D"
+  "lastTested": "J",
+  "testedAt": "2026-05-06T18:30:00Z",
+  "nextCategory": "K",
+  "resultsFile": "/tmp/bot-test-v2-20260506-123018.jsonl",
+  "restaurantId": 40,
+  "notes": "Category J ran via suite script. HTTP pass rate was 30/50 with 20 consecutive 429s from J31-J50. Manual judge score average 38.22/100, with only J14, J21, J26, J27, and J28 scoring >=85. Main failure modes were rate limiting/no replies, poor ambiguity handling (generic help or wrong context instead of clarification), and partial handling of mixed-intent prompts. Best responses were J14 closed-shift/open-accounts status, J21 combined sales+cancellations summary, and J07 action-specific clarification for cancel flow."
 }

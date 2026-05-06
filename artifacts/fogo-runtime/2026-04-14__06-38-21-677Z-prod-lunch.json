@@ -1,0 +1,76 @@
+{
+  "status": "ok",
+  "envLabel": "PROD",
+  "envProfile": "prod",
+  "phase": "lunch",
+  "restaurantId": 40,
+  "startedAt": "2026-04-14T06:36:25.004Z",
+  "finishedAt": "2026-04-14T06:38:21.677Z",
+  "plan": {
+    "phase": "lunch",
+    "scenario": "lunch_peak",
+    "serviceProfile": "high_turnover",
+    "expectedCovers": 84,
+    "expectedSalesRange": [
+      42000,
+      68000
+    ],
+    "expectedOrdersRange": [
+      29,
+      50
+    ],
+    "attendanceIncidents": [
+      "late_waiter",
+      "absent_hostess"
+    ],
+    "inventoryPressure": [
+      "premium_cuts",
+      "sides",
+      "wine"
+    ],
+    "operationalRisks": [
+      "queue_growth",
+      "discount_pressure"
+    ],
+    "restaurantId": 40,
+    "envProfile": "prod",
+    "forcedPhase": true,
+    "generatedAt": "2026-04-14T06:36:25.004Z"
+  },
+  "totals": {
+    "orders": 44,
+    "revenue": 244387.7,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 42,
+    "inventoryPurchases": 12,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 84,
+      "expectedSalesMin": 42000,
+      "expectedSalesMax": 68000
+    },
+    {
+      "name": "lunch",
+      "orders": 44,
+      "revenue": 244387.69999999998,
+      "payments": 42
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 12,
+      "inventoryConsumptions": 0,
+      "inventoryWaste": 0,
+      "skipped": false
+    }
+  ],
+  "error": null
+}

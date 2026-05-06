@@ -1,0 +1,139 @@
+{
+  "status": "ok",
+  "envLabel": "PROD",
+  "envProfile": "prod",
+  "phase": "afternoon",
+  "restaurantId": 40,
+  "startedAt": "2026-04-18T22:00:35.299Z",
+  "finishedAt": "2026-04-18T22:00:50.593Z",
+  "plan": {
+    "phase": "afternoon",
+    "scenario": "midday_reset",
+    "serviceProfile": "slow_recovery",
+    "expectedCovers": 30,
+    "expectedSalesRange": [
+      35000,
+      85000
+    ],
+    "expectedOrdersRange": [
+      11,
+      18
+    ],
+    "attendanceIncidents": [
+      "early_checkout"
+    ],
+    "inventoryPressure": [
+      "salad_bar",
+      "desserts"
+    ],
+    "operationalRisks": [
+      "open_orders_stale",
+      "staff_gap"
+    ],
+    "restaurantId": 40,
+    "envProfile": "prod",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-18T22:00:35.299Z"
+  },
+  "verification": {
+    "ok": false,
+    "businessDate": "2026-04-18",
+    "envProfile": "prod",
+    "phase": "afternoon",
+    "runConsistency": {
+      "ok": true,
+      "summary": {
+        "orders": 12,
+        "revenue": 77372,
+        "checkIns": 0,
+        "checkOuts": 0,
+        "shiftsOpened": 0,
+        "shiftsClosed": 0,
+        "inventoryPurchases": 0,
+        "inventoryConsumptions": 6,
+        "inventoryWaste": 0
+      },
+      "issues": [],
+      "warnings": []
+    },
+    "dayHealth": {
+      "ok": false,
+      "summary": {
+        "openShiftCount": 1,
+        "checkIns": 20,
+        "checkOuts": 0,
+        "orders": 50,
+        "revenue": 257435.4,
+        "openOrders": 0,
+        "negativeInventoryItems": 8
+      },
+      "issues": [
+        "12 open-order records attached to closed shifts"
+      ],
+      "warnings": [
+        "8 inventory items have negative cumulative balance"
+      ]
+    },
+    "issues": [
+      "12 open-order records attached to closed shifts"
+    ],
+    "warnings": [
+      "8 inventory items have negative cumulative balance"
+    ]
+  },
+  "totals": {
+    "orders": 12,
+    "revenue": 77372,
+    "schedules": 0,
+    "attendanceEvents": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 21,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 6,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 30,
+      "expectedSalesMin": 35000,
+      "expectedSalesMax": 85000
+    },
+    {
+      "name": "afternoon",
+      "orders": 12,
+      "revenue": 77372.00000000001,
+      "payments": 21,
+      "schedules": 0,
+      "attendanceEvents": 0,
+      "checkIns": 0,
+      "checkOuts": 0,
+      "lateCheckIns": 0,
+      "shiftsOpened": 0,
+      "shiftsClosed": 0
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 0,
+      "inventoryConsumptions": 6,
+      "inventoryWaste": 0,
+      "skipped": false
+    },
+    {
+      "name": "reservations",
+      "reservations": 0
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": false,
+      "runIssueCount": 0,
+      "runWarningCount": 0,
+      "dayIssueCount": 1,
+      "dayWarningCount": 1
+    }
+  ],
+  "error": null
+}

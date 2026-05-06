@@ -1,0 +1,150 @@
+{
+  "status": "ok",
+  "envLabel": "PROD",
+  "envProfile": "prod",
+  "phase": "late_night",
+  "restaurantId": 40,
+  "startedAt": "2026-04-20T06:00:18.349Z",
+  "finishedAt": "2026-04-20T06:01:07.994Z",
+  "plan": {
+    "phase": "open",
+    "scenario": "opening_ramp",
+    "serviceProfile": "prep_and_open",
+    "expectedCovers": 24,
+    "expectedSalesRange": [
+      55000,
+      95000
+    ],
+    "expectedOrdersRange": [
+      8,
+      14
+    ],
+    "attendanceIncidents": [
+      "late_waiter"
+    ],
+    "inventoryPressure": [
+      "produce",
+      "bar_prep",
+      "pantry"
+    ],
+    "operationalRisks": [
+      "zombie_shift",
+      "cash_session_missing"
+    ],
+    "restaurantId": 40,
+    "envProfile": "prod",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-20T06:00:18.349Z"
+  },
+  "verification": {
+    "ok": false,
+    "businessDate": "2026-04-20",
+    "envProfile": "prod",
+    "phase": "late_night",
+    "runConsistency": {
+      "ok": false,
+      "summary": {
+        "orders": 15,
+        "revenue": 65151.4,
+        "checkIns": 0,
+        "checkOuts": 2,
+        "shiftsOpened": 1,
+        "shiftsClosed": 1,
+        "inventoryPurchases": 0,
+        "inventoryConsumptions": 0,
+        "inventoryWaste": 0
+      },
+      "issues": [
+        "run has more check-outs (2) than check-ins (0)"
+      ],
+      "warnings": [
+        "run created 15 orders without new attendance check-ins in this execution"
+      ]
+    },
+    "dayHealth": {
+      "ok": false,
+      "summary": {
+        "openShiftCount": 1,
+        "checkIns": 0,
+        "checkOuts": 0,
+        "orders": 15,
+        "revenue": 65151.4,
+        "openOrders": 0,
+        "negativeInventoryItems": 8
+      },
+      "issues": [
+        "1 open-order records attached to closed shifts",
+        "1 settled payments look impossible vs order totals",
+        "orders exist (15) but there are no attendance check-ins for 2026-04-20"
+      ],
+      "warnings": [
+        "8 inventory items have negative cumulative balance"
+      ]
+    },
+    "issues": [
+      "run has more check-outs (2) than check-ins (0)",
+      "1 open-order records attached to closed shifts",
+      "1 settled payments look impossible vs order totals",
+      "orders exist (15) but there are no attendance check-ins for 2026-04-20"
+    ],
+    "warnings": [
+      "run created 15 orders without new attendance check-ins in this execution",
+      "8 inventory items have negative cumulative balance"
+    ]
+  },
+  "totals": {
+    "orders": 15,
+    "revenue": 65151.4,
+    "schedules": 33,
+    "attendanceEvents": 2,
+    "checkIns": 0,
+    "checkOuts": 2,
+    "shiftsOpened": 1,
+    "shiftsClosed": 1,
+    "payments": 20,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 0,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 24,
+      "expectedSalesMin": 55000,
+      "expectedSalesMax": 95000
+    },
+    {
+      "name": "late_night",
+      "orders": 15,
+      "revenue": 65151.40000000001,
+      "payments": 20,
+      "schedules": 33,
+      "attendanceEvents": 2,
+      "checkIns": 0,
+      "checkOuts": 2,
+      "lateCheckIns": 0,
+      "shiftsOpened": 1,
+      "shiftsClosed": 1
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 0,
+      "inventoryConsumptions": 0,
+      "inventoryWaste": 0,
+      "skipped": false
+    },
+    {
+      "name": "reservations",
+      "reservations": 0
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": false,
+      "runIssueCount": 1,
+      "runWarningCount": 1,
+      "dayIssueCount": 3,
+      "dayWarningCount": 1
+    }
+  ],
+  "error": null
+}

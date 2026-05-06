@@ -1,0 +1,15 @@
+{
+  "type": "maintenance",
+  "envProfile": "local",
+  "businessDate": "2026-04-20",
+  "serviceWindow": "LATE_NIGHT",
+  "restaurantId": 40,
+  "timestamp": "2026-04-21T05:48:46.213Z",
+  "rotatedOut": 0,
+  "rotatedIn": 0,
+  "coverage": {
+    "open": 3,
+    "printed": 2
+  },
+  "coverageOk": true
+}

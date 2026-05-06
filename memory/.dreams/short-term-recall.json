@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-12T04:42:06.305Z",
+  "updatedAt": "2026-05-06T19:43:19.584Z",
   "entries": {
     "memory:memory/2026-04-09.md:1:18": {
       "key": "memory:memory/2026-04-09.md:1:18",
@@ -9,21 +9,23 @@
       "endLine": 18,
       "source": "memory",
       "snippet": "# 2026-04-09 - 12:08 PM America/Mexico_City — Ran DB sequence fix cron (`scripts/fixes/fix_sequences_cron.js`). Result: 0 fixed, 127 OK, 2 skipped. All sequences up to date; no WhatsApp alert needed. # 2026-04-09 - 12:08 PM America/Mexico_City — Ran DB sequence fix cron (`scripts/fixes/fix_sequences_cron.js`). Result: 0 fixed, 127 OK, 2 skipped. All sequences up to date; no WhatsApp alert needed. ## Evening session (5-9 PM) — GrowthSuite architecture & local env sync ### Architecture discussion (GrowthSuite \"brain\") - Separated three categories: **Canales** (WhatsApp, POS Admin, Llamadas, Web, Email/SMS), **Dominios** (Ventas, Reservaciones, Inventario, Productos, Descuentos, Cancelacion",
-      "recallCount": 4,
+      "recallCount": 5,
       "dailyCount": 0,
       "groundedCount": 0,
-      "totalScore": 3.519953605957398,
+      "totalScore": 4.381009428928466,
       "maxScore": 0.8800112041988648,
       "firstRecalledAt": "2026-04-11T09:22:34.999Z",
-      "lastRecalledAt": "2026-04-12T04:42:06.305Z",
+      "lastRecalledAt": "2026-04-13T08:22:07.287Z",
       "queryHashes": [
         "45c6b34cc893",
         "da82abd96fa3",
         "c8032920fdf6",
-        "f3b596dd9393"
+        "f3b596dd9393",
+        "a27a097d0244"
       ],
       "recallDays": [
-        "2026-04-11"
+        "2026-04-11",
+        "2026-04-13"
       ],
       "conceptTags": [
         "america/mexico-city",
@@ -76,21 +78,23 @@
       "endLine": 39,
       "source": "memory",
       "snippet": "- All 9 production backends returned HTTP 200 on first two checks. - On 8:32 PM check: `pos-order-api` timed out, `impulsobotwhats` DNS failed (intermittent — likely Railway cold start). - DB heartbeat check blocked by missing local `pg` module and SSL self-signed cert issue. Known limitation — not a real DB outage. ### Open priorities for next session - Implement daily briefing cron (WhatsApp, 8 AM) using existing order/reservation/inventory queries. - Plan the shrimp flow demo (reservations × inventory × supplier order). - Start logging brain interactions for future ML dataset. - POS bot Category A score still at 59.6/100 — routing/report mismatches unaddressed.",
-      "recallCount": 4,
+      "recallCount": 5,
       "dailyCount": 0,
       "groundedCount": 0,
-      "totalScore": 3.4844065731376292,
+      "totalScore": 4.3353682413657975,
       "maxScore": 0.8711255560059343,
       "firstRecalledAt": "2026-04-11T09:22:34.999Z",
-      "lastRecalledAt": "2026-04-12T04:42:06.305Z",
+      "lastRecalledAt": "2026-04-13T08:22:07.287Z",
       "queryHashes": [
         "45c6b34cc893",
         "da82abd96fa3",
         "c8032920fdf6",
-        "f3b596dd9393"
+        "f3b596dd9393",
+        "a27a097d0244"
       ],
       "recallDays": [
-        "2026-04-11"
+        "2026-04-11",
+        "2026-04-13"
       ],
       "conceptTags": [
         "pos-order-api",
@@ -141,7 +145,7 @@
       "startLine": 1,
       "endLine": 26,
       "source": "memory",
-      "snippet": "# 2026-02-15 — Sesión GrowthSuite POS ## Arquitectura estudiada - 8 backends AdonisJS v6 + 6 frontends React 19/Vite/Ant Design - Todos comparten la misma DB PostgreSQL (`pos_app`, user: `pos_user`, pass: `pos_pass`) - Restaurant principal para pruebas: **restaurant_id = 7** - Test creds: `hectoremilio1000@gmail.com` / `admin20251` (super admin), `cafetacuba@r0.pos` / `secret123` (owner) ## BOM/Recetas — Mejoras implementadas 1. **Eliminado N+1 en GET /inventory/recipes** — ahora calcula costos con un solo SQL JOIN 2. **Creado `recipe_cost_service.ts`** con `computeRecipeCosts()`, `refreshRecipeCost()`, `wouldCreateCycle()` 3. **`cached_cost` + `cost_updated_at`** en `inventory_recipes` (m",
+      "snippet": "# 2026-02-15 — Sesión GrowthSuite POS ## Arquitectura estudiada - 8 backends AdonisJS v6 + 6 frontends React 19/Vite/Ant Design - Todos comparten la misma DB PostgreSQL (credenciales redactadas) - Restaurant principal para pruebas: **restaurant_id = 7** - Test creds redactadas del cache de recall ## BOM/Recetas — Mejoras implementadas 1. **Eliminado N+1 en GET /inventory/recipes** — ahora calcula costos con un solo SQL JOIN 2. **Creado `recipe_cost_service.ts`** con `computeRecipeCosts()`, `refreshRecipeCost()`, `wouldCreateCycle()` 3. **`cached_cost` + `cost_updated_at`** en `inventory_recipes` (m",
       "recallCount": 1,
       "dailyCount": 0,
       "groundedCount": 0,
@@ -173,21 +177,23 @@
       "endLine": 169,
       "source": "memory",
       "snippet": "- No sub-agents running - All systems healthy ## 12:26-28 PM - Obsidian Note Creation - User requested saving strategic thoughts to Obsidian vault - Created two notes: - \"Vision - Empresa A vs Empresa B.md\" (cerebro/agentes platform strategy) - \"Marketing con IA - Ejecucion.md\" (realistic marketing AI capabilities) - Notes saved in ~/openclaw/workspace/notas/ folder - Context: Strategic thinking about GrowthSuite evolution and honest AI marketing ## 12:46 PM - Auto-save Checkpoint - WhatsApp stable (test successful - Message ID: 3EB09E3BD464A20A011A20) - Session status: Idle, awaiting further input on devJampier55 merge decision - No active work or sub-agents running - Strategic notes",
-      "recallCount": 4,
+      "recallCount": 5,
       "dailyCount": 0,
       "groundedCount": 0,
-      "totalScore": 3.400111355146455,
-      "maxScore": 0.8788840570697912,
+      "totalScore": 4.308535457233265,
+      "maxScore": 0.9084241020868098,
       "firstRecalledAt": "2026-04-11T09:22:34.999Z",
-      "lastRecalledAt": "2026-04-12T04:42:06.305Z",
+      "lastRecalledAt": "2026-05-06T19:43:19.584Z",
       "queryHashes": [
         "45c6b34cc893",
         "b44309736282",
         "c8032920fdf6",
-        "f3b596dd9393"
+        "f3b596dd9393",
+        "e515d81b9807"
       ],
       "recallDays": [
-        "2026-04-11"
+        "2026-04-11",
+        "2026-05-06"
       ],
       "conceptTags": [
         "sub-agents",
@@ -207,19 +213,21 @@
       "endLine": 23,
       "source": "memory",
       "snippet": "# 2026-03-10 ## Sequence Recovery — All APIs Protected - Merged PR #23 (pos-app): `withSequenceRecovery` added to ALL tables across pos_order_api, pos_auth_api, pos_inventory_api - Tables protected: payments, products, tables, areas, product_groups, product_categories, modifiers, services (order), users (auth), inventory_items, inventory_presentations, inventory_recipes, inventory_warehouses, purchase_orders, suppliers (inventory) - pos_cash_api already had it (shifts, cash_sessions, cash_movements) - Branch: `fix/sequence-recovery-all-tables` - Dual protection: Option B (runtime retry on 23505) + Option C (nightly cron at 5AM) ## Jampier arreglosJampier23 — Partial Merge - Backend PR #24:",
-      "recallCount": 2,
+      "recallCount": 3,
       "dailyCount": 0,
       "groundedCount": 0,
-      "totalScore": 1.680386873374765,
+      "totalScore": 2.5194170329326657,
       "maxScore": 0.8403172211027834,
       "firstRecalledAt": "2026-04-11T09:22:34.999Z",
-      "lastRecalledAt": "2026-04-12T04:42:06.305Z",
+      "lastRecalledAt": "2026-04-13T08:52:14.738Z",
       "queryHashes": [
         "45c6b34cc893",
-        "f3b596dd9393"
+        "f3b596dd9393",
+        "966c9e6e29e7"
       ],
       "recallDays": [
-        "2026-04-11"
+        "2026-04-11",
+        "2026-04-13"
       ],
       "conceptTags": [
         "pos-app",
@@ -239,22 +247,26 @@
       "endLine": 146,
       "source": "memory",
       "snippet": "- Code merge pending: devJampier55 → dev → main - WAITING FOR USER APPROVAL to proceed with PR creation and merge process ## 11:46 AM - Auto-save Checkpoint - WhatsApp reconnected at 11:43 AM - tested successfully (Message ID: 3EB06439F13DF6243C1A76) - Active work: Customer unification merge review completed, awaiting user decision - Pending user approval: Create PRs for devJampier55 → dev → main - No sub-agents running - All systems operational ## 11:46 AM - Deep Code Review (devJampier55) - Completed detailed analysis of customer unification changes - Found 8 issues, including 2 HIGH SEVERITY problems: 1. coupon_redemptions table missing in prod → will cause 500 errors on coupon endp",
-      "recallCount": 5,
+      "recallCount": 7,
       "dailyCount": 0,
       "groundedCount": 0,
-      "totalScore": 4.215629028301854,
-      "maxScore": 0.8555452517872749,
+      "totalScore": 5.957083597310912,
+      "maxScore": 0.8816905486528874,
       "firstRecalledAt": "2026-04-11T09:22:34.999Z",
-      "lastRecalledAt": "2026-04-12T04:42:06.305Z",
+      "lastRecalledAt": "2026-05-06T19:43:19.584Z",
       "queryHashes": [
         "45c6b34cc893",
         "49db509c84cb",
         "55f740a2f989",
         "c8032920fdf6",
-        "f3b596dd9393"
+        "f3b596dd9393",
+        "01df5ea2030c",
+        "e515d81b9807"
       ],
       "recallDays": [
-        "2026-04-11"
+        "2026-04-11",
+        "2026-04-15",
+        "2026-05-06"
       ],
       "conceptTags": [
         "auto-save",
@@ -401,20 +413,22 @@
       "endLine": 282,
       "source": "memory",
       "snippet": "- devJampier54/55: Still on hold (customer unification issues) - inventarios branch: 1 commit pending review - User requested full branch status analysis ## 6:16 PM - Auto-save Checkpoint - Active work: Just completed comprehensive branch status review - Deployment: All systems operational, roles filter deployed successfully - No pending tasks or sub-agents running - Branches synchronized except minor backend null-check difference ## 6:20 PM - WhatsApp Summary Sent - Sent comprehensive branch status report to user via WhatsApp - Summary included: backend/frontend sync status, pending branches, deployment status - User has full visibility on: - Backend: 3-line difference (null-check f",
-      "recallCount": 3,
+      "recallCount": 4,
       "dailyCount": 0,
       "groundedCount": 0,
-      "totalScore": 2.512020971914707,
-      "maxScore": 0.8416944765377937,
+      "totalScore": 3.384384426765739,
+      "maxScore": 0.8723634548510322,
       "firstRecalledAt": "2026-04-11T09:22:41.595Z",
-      "lastRecalledAt": "2026-04-11T21:28:21.734Z",
+      "lastRecalledAt": "2026-04-15T06:27:13.084Z",
       "queryHashes": [
         "aa5427fa325d",
         "49db509c84cb",
-        "55f740a2f989"
+        "55f740a2f989",
+        "01df5ea2030c"
       ],
       "recallDays": [
-        "2026-04-11"
+        "2026-04-11",
+        "2026-04-15"
       ],
       "conceptTags": [
         "devjampier54/55",
@@ -465,19 +479,21 @@
       "endLine": 433,
       "source": "memory",
       "snippet": "- Systems healthy, monitoring autonomous, ready for next session - Pending: minor backend sync decision (3-line null-check) - Extended watch maintained throughout, infrastructure stable - Session ready for natural conclusion or user resumption ## 11:40 PM - End of Day Summary - Successful completion of major milestone: roles filter deployed and tested - Strategic documentation complete: comprehensive AI vision captured in Obsidian - Infrastructure stable: all backends operational, WhatsApp monitoring active - Tomorrow's priorities: backend branch sync, continue strategic implementation - Session in quiet monitoring mode, ready to resume work when needed ## 4:10 AM - Auto-save Checkpoint (A",
-      "recallCount": 2,
+      "recallCount": 3,
       "dailyCount": 0,
       "groundedCount": 0,
-      "totalScore": 1.7022711800439072,
-      "maxScore": 0.8511355900219536,
+      "totalScore": 2.5700143187338194,
+      "maxScore": 0.8677431386899124,
       "firstRecalledAt": "2026-04-11T09:22:49.164Z",
-      "lastRecalledAt": "2026-04-11T21:28:21.734Z",
+      "lastRecalledAt": "2026-04-23T16:27:46.464Z",
       "queryHashes": [
         "b44309736282",
-        "55f740a2f989"
+        "55f740a2f989",
+        "468fb84ce1e1"
       ],
       "recallDays": [
-        "2026-04-11"
+        "2026-04-11",
+        "2026-04-23"
       ],
       "conceptTags": [
         "3-line",
@@ -497,19 +513,21 @@
       "endLine": 374,
       "source": "memory",
       "snippet": "- Strategic foundation set for next development phase - Session idle, no active tasks or sub-agents ## 11:10 PM - Final Checkpoint - Day complete: roles filter live, strategic vision documented - All systems operational, comprehensive work accomplished - Ready for tomorrow: backend sync pending, vision roadmap established - Session entering quiet period, no active work - Infrastructure monitoring continues automatically ## 12:10 AM (April 4) - Night Watch - Session transitioned to overnight monitoring - All deliverables complete: roles filter deployed, strategic documentation finished - Systems stable, no active tasks or intervention needed - Pending for next session: backend main→dev sync",
-      "recallCount": 2,
+      "recallCount": 3,
       "dailyCount": 0,
       "groundedCount": 0,
-      "totalScore": 1.6928222324587894,
-      "maxScore": 0.8464111162293947,
+      "totalScore": 2.556383613215063,
+      "maxScore": 0.8635613807562734,
       "firstRecalledAt": "2026-04-11T09:22:49.164Z",
-      "lastRecalledAt": "2026-04-11T21:28:21.734Z",
+      "lastRecalledAt": "2026-04-23T16:27:46.464Z",
       "queryHashes": [
         "b44309736282",
-        "55f740a2f989"
+        "55f740a2f989",
+        "468fb84ce1e1"
       ],
       "recallDays": [
-        "2026-04-11"
+        "2026-04-11",
+        "2026-04-23"
       ],
       "conceptTags": [
         "sub-agents",
@@ -529,18 +547,20 @@
       "endLine": 121,
       "source": "memory",
       "snippet": "## 10:46 AM - Auto-save Checkpoint & Health Check - WhatsApp timeout at 10:32 AM → gateway restarted → reconnected at 10:33 AM - WhatsApp retry test successful (Message ID: 3EB024AD7C51E25B0EB0C4) - GrowthSuite POS health check completed: ALL SYSTEMS HEALTHY - All 9 backend APIs returning HTTP 200 - Database connectivity OK (120 orders in last 24h) - Session status: Monitoring, all systems operational - No active work, pending tasks, or sub-agents ## 11:16 AM - Auto-save Checkpoint - WhatsApp reconnected at 11:08 AM - tested successfully (Message ID: 3EB01E7F368AF7C1DB3913) - Session status: Idle monitoring mode - No active work, pending approvals, or sub-agents running - All systems he",
-      "recallCount": 1,
+      "recallCount": 2,
       "dailyCount": 0,
       "groundedCount": 0,
-      "totalScore": 0.8545419278882161,
-      "maxScore": 0.8545419278882161,
+      "totalScore": 1.7133401991100161,
+      "maxScore": 0.8587982712217999,
       "firstRecalledAt": "2026-04-11T21:28:21.734Z",
-      "lastRecalledAt": "2026-04-11T21:28:21.734Z",
+      "lastRecalledAt": "2026-04-15T06:27:13.084Z",
       "queryHashes": [
-        "55f740a2f989"
+        "55f740a2f989",
+        "01df5ea2030c"
       ],
       "recallDays": [
-        "2026-04-11"
+        "2026-04-11",
+        "2026-04-15"
       ],
       "conceptTags": [
         "gateway",
@@ -675,6 +695,1165 @@
         "usedashboarddata.ts",
         "commit",
         "7e193ed"
+      ]
+    },
+    "memory:memory/2026-04-11.md:15:23": {
+      "key": "memory:memory/2026-04-11.md:15:23",
+      "path": "memory/2026-04-11.md",
+      "startLine": 15,
+      "endLine": 23,
+      "source": "memory",
+      "snippet": "- Repeated heartbeat/health monitoring later in the day showed WhatsApp gateway reconnecting periodically but ending connected, and a 9:00 AM GrowthSuite health check reported all 9 Railway backends healthy plus PostgreSQL reachable with `orders` last-24h count = 106. - Around 19:01, two async schedule/shift automation runs finished successfully (`glow-bas`, `tidy-for`). Both generated schedules for 2026-04-13 and auto-closed detected zombie shifts (`#28` and `#118214`) without reported errors. [reportes] A46 | intent: ? | 320ms (no reply) ❌ [reportes] A47 | intent: ? | 403ms (no reply) ❌ [reportes] A48 | intent: ? | 320ms (no reply) ❌ [reportes] A49 | intent: ? | 313ms (no reply) ❌ - Fogo d",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1.7443384149534003,
+      "maxScore": 0.873300262627505,
+      "firstRecalledAt": "2026-04-13T08:19:33.746Z",
+      "lastRecalledAt": "2026-04-13T08:22:07.287Z",
+      "queryHashes": [
+        "f41323bf6519",
+        "a27a097d0244"
+      ],
+      "recallDays": [
+        "2026-04-13"
+      ],
+      "conceptTags": [
+        "gateway",
+        "heartbeat/health",
+        "last-24h",
+        "schedule/shift",
+        "glow-bas",
+        "tidy-for",
+        "auto-closed",
+        "repeated"
+      ]
+    },
+    "memory:memory/2026-04-12.md:1:7": {
+      "key": "memory:memory/2026-04-12.md:1:7",
+      "path": "memory/2026-04-12.md",
+      "startLine": 1,
+      "endLine": 7,
+      "source": "memory",
+      "snippet": "## Memory flush - Reviewed GrowthSuite brain architecture with the user and confirmed the practical distinction between the current brain runtime and the broader product-level brain: `pos_bot_api` is the main runtime today, but the full operational brain spans other services, OpenClaw orchestration, cron, channels, and the Fogo simulator. - Created durable architecture notes in `knowledge/architecture/growthsuite/brain-policy-layer.md` and `knowledge/architecture/growthsuite/fogo-demo-simulator-architecture.md` for sharing with Jampier, focusing on reusable architecture and patterns, not secrets. - Committed those workspace knowledge docs locally with commit `70f7a31` (`docs: add GrowthSuite",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1.7417206195429717,
+      "maxScore": 0.8964805332205696,
+      "firstRecalledAt": "2026-04-13T08:22:07.287Z",
+      "lastRecalledAt": "2026-04-13T08:52:14.738Z",
+      "queryHashes": [
+        "a27a097d0244",
+        "966c9e6e29e7"
+      ],
+      "recallDays": [
+        "2026-04-13"
+      ],
+      "conceptTags": [
+        "product-level",
+        "pos-bot-api",
+        "flush",
+        "reviewed",
+        "growthsuite",
+        "brain",
+        "architecture",
+        "the"
+      ]
+    },
+    "memory:memory/2026-04-11.md:23:27": {
+      "key": "memory:memory/2026-04-11.md:23:27",
+      "path": "memory/2026-04-11.md",
+      "startLine": 23,
+      "endLine": 27,
+      "source": "memory",
+      "snippet": "- Local brain integration for demo: enabled via `.env` flags in `pos_bot_api`, protected debug endpoint flow with `x-bot-secret`, and simulator now auto-generates `sim-r<ID>` and sends explicit `restaurantId` so local Fogo (`restaurantId=40`) works even with `phone = null` after removing `.whereNotNull('phone')` from `bot_debug_controller.ts`. - Battery loop setup for bot quality: created `pos_bot_api/scripts/brain_question_battery_100.json` and `pos_bot_api/scripts/run_brain_battery_100.py` to run 105 classified questions against local r40 and save structured results. - First heuristic battery findings on `brain_battery_100_results.json`: 105 total, clusters `{'general': 32, 'sales_ops': 19",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8877771566099999,
+      "maxScore": 0.8877771566099999,
+      "firstRecalledAt": "2026-04-13T08:22:07.287Z",
+      "lastRecalledAt": "2026-04-13T08:22:07.287Z",
+      "queryHashes": [
+        "a27a097d0244"
+      ],
+      "recallDays": [
+        "2026-04-13"
+      ],
+      "conceptTags": [
+        "pos-bot-api",
+        "x-bot-secret",
+        "auto-generates",
+        "sim-r",
+        "bot-debug-controller.ts",
+        "brain-battery-100-results.json",
+        "sales-ops",
+        "local"
+      ]
+    },
+    "memory:memory/2026-04-11.md:1:11": {
+      "key": "memory:memory/2026-04-11.md:1:11",
+      "path": "memory/2026-04-11.md",
+      "startLine": 1,
+      "endLine": 11,
+      "source": "memory",
+      "snippet": "# 2026-04-11 - 05:00 America/Mexico_City — Ran DB sequence fix cron (`scripts/fixes/fix_sequences_cron.js`). Result: 0 fixed, 127 ok, 2 skipped. All sequences up to date, no WhatsApp alert needed. ## Durable session notes (compaction flush) - GrowthSuite cerebro work advanced to a usable v1 base in `~/proyectos/growthsuite/pos-app/pos_bot_api`. - Confirmed architecture progression already working in practice: dataset anual local para Fogo (`restaurantId=16`), queries, consolidated state, diagnosis, `brainResponse()`, feature flags, hybrid router, and integration into the real bot flow. - Real bot integration was done with a minimal change in `app/bot/engine.ts`, intercepting after receive",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8830422243230248,
+      "maxScore": 0.8830422243230248,
+      "firstRecalledAt": "2026-04-13T08:22:07.287Z",
+      "lastRecalledAt": "2026-04-13T08:22:07.287Z",
+      "queryHashes": [
+        "a27a097d0244"
+      ],
+      "recallDays": [
+        "2026-04-13"
+      ],
+      "conceptTags": [
+        "router",
+        "america/mexico-city",
+        "app/bot/engine.ts",
+        "america",
+        "mexico-city",
+        "ran",
+        "sequence",
+        "fix"
+      ]
+    },
+    "memory:memory/2026-03-16.md:33:70": {
+      "key": "memory:memory/2026-03-16.md:33:70",
+      "path": "memory/2026-03-16.md",
+      "startLine": 33,
+      "endLine": 70,
+      "source": "memory",
+      "snippet": "- System ready for business hours and user activity ## 6:16 AM - Auto-save Checkpoint - Session status: Idle, no activity - No work in progress, pending approvals, or sub-agents - WhatsApp stable (2hr 9min uptime since 4:07 AM) - Approaching business hours - ready for GrowthSuite health checks ## 6:46 AM - Auto-save Checkpoint - Session status: Idle monitoring mode - No active work, pending tasks, or sub-agents running - WhatsApp gateway stable (2hr 39min uptime) - Early business hours - ready for system health checks if needed ## 7:16 AM - Auto-save Checkpoint - Session status: Idle, monitoring only - No work in progress, pending approvals, or active sub-agents - WhatsApp stable (3hr 9mi",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8460202842308714,
+      "maxScore": 0.8460202842308714,
+      "firstRecalledAt": "2026-04-13T08:22:07.287Z",
+      "lastRecalledAt": "2026-04-13T08:22:07.287Z",
+      "queryHashes": [
+        "a27a097d0244"
+      ],
+      "recallDays": [
+        "2026-04-13"
+      ],
+      "conceptTags": [
+        "gateway",
+        "auto-save",
+        "sub-agents",
+        "system",
+        "ready",
+        "business",
+        "hours",
+        "user"
+      ]
+    },
+    "memory:memory/2026-03-16.md:62:97": {
+      "key": "memory:memory/2026-03-16.md:62:97",
+      "path": "memory/2026-03-16.md",
+      "startLine": 62,
+      "endLine": 97,
+      "source": "memory",
+      "snippet": "- Session status: Idle monitoring mode - No active work, pending approvals, or sub-agents running - WhatsApp stable, business hours active - Systems ready for health checks and user requests ## 8:46 AM - Auto-save Checkpoint - Session status: Idle monitoring - No work in progress, pending tasks, or sub-agents - WhatsApp stable since 8:12 AM reconnect - Business hours - ready for GrowthSuite health checks rotation ## 9:16 AM - Auto-save Checkpoint - Session status: Idle monitoring mode - No active work, pending approvals, or sub-agents running - WhatsApp gateway stable (1hr 4min since last reconnect) - Prime business hours - systems ready for health checks if needed ## 9:46 AM - Auto-save",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8418747696046153,
+      "maxScore": 0.8418747696046153,
+      "firstRecalledAt": "2026-04-13T08:22:07.287Z",
+      "lastRecalledAt": "2026-04-13T08:22:07.287Z",
+      "queryHashes": [
+        "a27a097d0244"
+      ],
+      "recallDays": [
+        "2026-04-13"
+      ],
+      "conceptTags": [
+        "gateway",
+        "sub-agents",
+        "auto-save",
+        "status",
+        "idle",
+        "monitoring",
+        "mode",
+        "active"
+      ]
+    },
+    "memory:memory/2026-02-22.md:44:73": {
+      "key": "memory:memory/2026-02-22.md:44:73",
+      "path": "memory/2026-02-22.md",
+      "startLine": 44,
+      "endLine": 73,
+      "source": "memory",
+      "snippet": "- Hero: 100vh cinematic, crossfade carousel, gradient overlay, scroll indicator - About: 2-col with offset-border image effect, intersection observer fade-in - Menu: elegant cards with stagger animation, ornamental dividers - Gallery: 4-col grid with hover overlay + lightbox modal - Reservations: dark CTA section with dot pattern texture - FAQ: accordion with AnimatePresence, rotating chevrons - Footer: 4 columns dark, social SVG icons ### Café de Tacuba Demo - Generated site.config.json from restaurant_ai_contexts DB profile (restaurant_id=7) - Pulled: concept, cuisine_type, differentiators, schedule, music info, FAQs - Created at pos_website_cafe_tacuba/, verified all pages HTTP 200 ###",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8399155435592794,
+      "maxScore": 0.8399155435592794,
+      "firstRecalledAt": "2026-04-13T08:52:14.738Z",
+      "lastRecalledAt": "2026-04-13T08:52:14.738Z",
+      "queryHashes": [
+        "966c9e6e29e7"
+      ],
+      "recallDays": [
+        "2026-04-13"
+      ],
+      "conceptTags": [
+        "2-col",
+        "offset-border",
+        "fade-in",
+        "4-col",
+        "site.config.json",
+        "restaurant-ai-contexts",
+        "restaurant-id",
+        "cuisine-type"
+      ]
+    },
+    "memory:memory/2026-04-05.md:2583:2599": {
+      "key": "memory:memory/2026-04-05.md:2583:2599",
+      "path": "memory/2026-04-05.md",
+      "startLine": 2583,
+      "endLine": 2599,
+      "source": "memory",
+      "snippet": "- Pending tasks: append this checkpoint to `memory/2026-04-05.md`; no other active work is exposed here. - Waiting for approval: nothing; no code changes, pushes, merges, external sends, or user decisions are pending. - Sub-agents running: none visible from current context. - Session state: idle/passive outside this backup flow. - Standing decisions: continue following `memory/model-playbook.md` strictly; Codex 5.4 remains the default for cron/heartbeat/operational work. - Durable resume context: no fresh user-directed implementation work is visible in this session. - Prior unresolved context worth remembering: POS bot Category A remains the latest known open product signal at 59.6/100 with",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.9157506682240495,
+      "maxScore": 0.9157506682240495,
+      "firstRecalledAt": "2026-04-14T21:47:38.513Z",
+      "lastRecalledAt": "2026-04-14T21:47:38.513Z",
+      "queryHashes": [
+        "81470623f371"
+      ],
+      "recallDays": [
+        "2026-04-14"
+      ],
+      "conceptTags": [
+        "backup",
+        "memory/2026-04-05.md",
+        "sub-agents",
+        "idle/passive",
+        "memory/model-playbook.md",
+        "5.4",
+        "cron/heartbeat/operational",
+        "user-directed"
+      ]
+    },
+    "memory:memory/2026-04-05.md:2570:2586": {
+      "key": "memory:memory/2026-04-05.md:2570:2586",
+      "path": "memory/2026-04-05.md",
+      "startLine": 2570,
+      "endLine": 2586,
+      "source": "memory",
+      "snippet": "- In progress: `memory/model-playbook.md` was read first, then current session state was checked. - Pending tasks: none beyond appending this summary to `memory/2026-04-05.md`. - Waiting for approval: nothing; no code changes, pushes, merges, or outbound messages are pending. - Sub-agents running: none visible from current context. - Other active sessions: none visible beyond this backup flow. - Standing decisions: follow `memory/model-playbook.md` strictly; keep Codex 5.4 as the default for cron/heartbeat/operational work. - Durable resume context: session still appears idle/passive from cron context, with no fresh user-directed implementation work exposed. - Prior unresolved context worth",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.9147327431077479,
+      "maxScore": 0.9147327431077479,
+      "firstRecalledAt": "2026-04-14T21:47:38.513Z",
+      "lastRecalledAt": "2026-04-14T21:47:38.513Z",
+      "queryHashes": [
+        "81470623f371"
+      ],
+      "recallDays": [
+        "2026-04-14"
+      ],
+      "conceptTags": [
+        "backup",
+        "memory/model-playbook.md",
+        "memory/2026-04-05.md",
+        "sub-agents",
+        "5.4",
+        "cron/heartbeat/operational",
+        "idle/passive",
+        "user-directed"
+      ]
+    },
+    "memory:memory/2026-04-05.md:2559:2574": {
+      "key": "memory:memory/2026-04-05.md:2559:2574",
+      "path": "memory/2026-04-05.md",
+      "startLine": 2559,
+      "endLine": 2574,
+      "source": "memory",
+      "snippet": "- Pending tasks: append this checkpoint to `memory/2026-04-05.md`; no other work is in flight. - Waiting for approval: nothing; no code changes, pushes, merges, or outbound messages are pending. - Sub-agents running: none (`subagents list` returned 0 active / 0 recent). - Other active sessions: none beyond this cron session (`sessions_list` only showed this backup run). - Standing decisions: follow `memory/model-playbook.md` strictly; keep Codex 5.4 as the default for cron/heartbeat/operational work. - Durable resume context: session appears idle/passive from cron context, with no fresh user-directed implementation work visible. - Prior unresolved context to remember if work resumes later: P",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.9141368980808504,
+      "maxScore": 0.9141368980808504,
+      "firstRecalledAt": "2026-04-14T21:47:38.513Z",
+      "lastRecalledAt": "2026-04-14T21:47:38.513Z",
+      "queryHashes": [
+        "81470623f371"
+      ],
+      "recallDays": [
+        "2026-04-14"
+      ],
+      "conceptTags": [
+        "backup",
+        "memory/2026-04-05.md",
+        "sub-agents",
+        "sessions-list",
+        "memory/model-playbook.md",
+        "5.4",
+        "cron/heartbeat/operational",
+        "idle/passive"
+      ]
+    },
+    "memory:memory/2026-04-05.md:3161:3177": {
+      "key": "memory:memory/2026-04-05.md:3161:3177",
+      "path": "memory/2026-04-05.md",
+      "startLine": 3161,
+      "endLine": 3177,
+      "source": "memory",
+      "snippet": "- If the session restarts: re-read the playbook, resume from the same idle baseline, and wait for the next explicit instruction. ## 11:13 PM Session Context Backup - Active work: only this scheduled backup task is active in the visible session. - In progress: `memory/model-playbook.md` was read first, then this concise state snapshot was appended to `memory/2026-04-05.md`. - Pending tasks: none after this backup completes. - Waiting for approval: nothing; no code changes, pushes, merges, destructive actions, or external messages are queued. - Sub-agents running: none visible from current session context. - Key decisions: keep following `memory/model-playbook.md` strictly; Codex 5.4 remains",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.9092327958542157,
+      "maxScore": 0.9092327958542157,
+      "firstRecalledAt": "2026-04-14T21:47:38.513Z",
+      "lastRecalledAt": "2026-04-14T21:47:38.513Z",
+      "queryHashes": [
+        "81470623f371"
+      ],
+      "recallDays": [
+        "2026-04-14"
+      ],
+      "conceptTags": [
+        "backup",
+        "re-read",
+        "memory/model-playbook.md",
+        "memory/2026-04-05.md",
+        "sub-agents",
+        "5.4",
+        "the",
+        "restarts"
+      ]
+    },
+    "memory:memory/2026-04-05.md:2544:2562": {
+      "key": "memory:memory/2026-04-05.md:2544:2562",
+      "path": "memory/2026-04-05.md",
+      "startLine": 2544,
+      "endLine": 2562,
+      "source": "memory",
+      "snippet": "- Durable unresolved context: POS bot Category A remains the latest known open product signal at 59.6/100 with routing/report mismatches; no remediation has started. - If the session restarts: re-read the playbook, resume from the same idle baseline, and wait for the next explicit instruction before acting. ## Session backup - 2026-04-11 12:42 America/Mexico_City - Active work: handling the cron backup request for this session context. - In progress: read `memory/model-playbook.md` as instructed and preparing this checkpoint. - Pending tasks: none beyond completing this summary append. - Waiting for approval: nothing. - Sub-agents running: none. - Key decisions/context: follow `memory/model",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.9065610877993835,
+      "maxScore": 0.9065610877993835,
+      "firstRecalledAt": "2026-04-14T21:47:38.513Z",
+      "lastRecalledAt": "2026-04-14T21:47:38.513Z",
+      "queryHashes": [
+        "81470623f371"
+      ],
+      "recallDays": [
+        "2026-04-14"
+      ],
+      "conceptTags": [
+        "backup",
+        "59.6/100",
+        "routing/report",
+        "re-read",
+        "america/mexico-city",
+        "memory/model-playbook.md",
+        "sub-agents",
+        "decisions/context"
+      ]
+    },
+    "memory:memory/2026-03-21.md:34:72": {
+      "key": "memory:memory/2026-03-21.md:34:72",
+      "path": "memory/2026-03-21.md",
+      "startLine": 34,
+      "endLine": 72,
+      "source": "memory",
+      "snippet": "- WhatsApp: Functional despite ongoing instability pattern - Gateway: Responsive with effective auto-healing - Memory auto-save: Working normally - All services operational, no intervention required ### Resume Context - 408 disconnect pattern is persistent but service remains reliable - Following HEARTBEAT.md protocols for connectivity monitoring - System stable and ready for main session activity when user returns - Scheduled reminder processing functioning normally --- ## 10:03 PM Auto-Save Checkpoint ### Recent Work Completed (8:20-8:30 PM) - **Task**: Create PRs for `arreglosJampier60` branches (front + back) → merge to main - **Issue found**: Front branch deleted `pos_admin_front/.e",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1.6559327744562236,
+      "maxScore": 0.8745595851999216,
+      "firstRecalledAt": "2026-04-15T06:27:13.084Z",
+      "lastRecalledAt": "2026-05-06T16:06:33.460Z",
+      "queryHashes": [
+        "01df5ea2030c",
+        "e85bfea1ee80"
+      ],
+      "recallDays": [
+        "2026-04-15",
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "gateway",
+        "auto-healing",
+        "auto-save",
+        "heartbeat.md",
+        "20-8",
+        "pos-admin-front",
+        "whatsapp",
+        "functional"
+      ]
+    },
+    "memory:memory/2026-04-14.md:1:7": {
+      "key": "memory:memory/2026-04-14.md:1:7",
+      "path": "memory/2026-04-14.md",
+      "startLine": 1,
+      "endLine": 7,
+      "source": "memory",
+      "snippet": "- Se arrancó Fase A del runtime operacional de Fogo de Chão para soportar pruebas continuas del bot/cerebro con datos vivos en `prod`, `dev` y `local`. - El objetivo acordado quedó claro: no tratar Fogo como “script que mete datos”, sino como `restaurant runtime + evaluator harness` para que el bot pueda responder sobre operación realista, inventario, asistencias y reportes. - Se creó documentación durable en `knowledge/architecture/growthsuite/restaurant-runtime-simulator.md` con módulos objetivo: `scenario-planner`, `attendance-simulator`, `operations-simulator`, `inventory-simulator`, `consistency-verifier`, `bot-evaluator`. - Se crearon módulos nuevos versionables en el workspace: `scrip",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1.7289650639130192,
+      "maxScore": 0.8736121065480675,
+      "firstRecalledAt": "2026-04-23T09:31:54.576Z",
+      "lastRecalledAt": "2026-05-06T19:24:59.861Z",
+      "queryHashes": [
+        "3a44bd356208",
+        "d60f16039ea7"
+      ],
+      "recallDays": [
+        "2026-04-23",
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "bot/cerebro",
+        "scenario-planner",
+        "attendance-simulator",
+        "operations-simulator",
+        "inventory-simulator",
+        "consistency-verifier",
+        "bot-evaluator",
+        "arrancó"
+      ]
+    },
+    "memory:memory/2026-03-25.md:325:350": {
+      "key": "memory:memory/2026-03-25.md:325:350",
+      "path": "memory/2026-03-25.md",
+      "startLine": 325,
+      "endLine": 350,
+      "source": "memory",
+      "snippet": "- Key resume context: both services in extended outage, may indicate broader network resolution attempt ## 20:14 - WhatsApp Gateway Reconnected After 3+ Hour Outage - WhatsApp gateway connected at 20:14:54 - ended longest outage since crisis began - Extended disconnection (17:07-20:14) may have been network repair attempt - Current status: \"OK · linked · auth just now\" - appears stable ## 20:21-20:25 - Railway Deploy Issue Resolved - User reported stuck pos_cash_api and pos_order_api deploys (5 hours waiting approval) - Successfully approved both deployments via Railway GraphQL API - Both services now showing SUCCESS status and responding healthy (200 OK) ## 20:25-20:44 - GrowthSuite Heal",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.856710623815972,
+      "maxScore": 0.856710623815972,
+      "firstRecalledAt": "2026-04-23T09:31:54.576Z",
+      "lastRecalledAt": "2026-04-23T09:31:54.576Z",
+      "queryHashes": [
+        "3a44bd356208"
+      ],
+      "recallDays": [
+        "2026-04-23"
+      ],
+      "conceptTags": [
+        "gateway",
+        "network",
+        "07-20",
+        "21-20",
+        "pos-cash-api",
+        "pos-order-api",
+        "25-20",
+        "key"
+      ]
+    },
+    "memory:memory/2026-04-05.md:261:283": {
+      "key": "memory:memory/2026-04-05.md:261:283",
+      "path": "memory/2026-04-05.md",
+      "startLine": 261,
+      "endLine": 283,
+      "source": "memory",
+      "snippet": "- Codex 5.4 is the default model for cron/heartbeat and routine operational work. - `memory/model-playbook.md` must be read before acting on tasks in this workflow. - Resume point if restarted: pick up as an idle monitoring session with no unfinished execution state, no pending approvals, and no background agents to recover. ## 12:18 AM Session Context Backup - Active work: this backup write only; no implementation, debugging, or coding task is currently in progress. - Waiting for approval: none. - Sub-agents running: none known. - Current session state: idle/passive monitoring, ready for the next user request. - Standing decisions still in effect: - Codex 5.4 is the operational defau",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.7906990474432427,
+      "maxScore": 0.7906990474432427,
+      "firstRecalledAt": "2026-05-06T16:06:33.460Z",
+      "lastRecalledAt": "2026-05-06T16:06:33.460Z",
+      "queryHashes": [
+        "e85bfea1ee80"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "backup",
+        "5.4",
+        "cron/heartbeat",
+        "memory/model-playbook.md",
+        "sub-agents",
+        "idle/passive",
+        "codex",
+        "the"
+      ]
+    },
+    "memory:memory/2026-04-05.md:72:99": {
+      "key": "memory:memory/2026-04-05.md:72:99",
+      "path": "memory/2026-04-05.md",
+      "startLine": 72,
+      "endLine": 99,
+      "source": "memory",
+      "snippet": "- `model-playbook.md` and `codex-modes.md` remain the source of truth for behavior - Session can resume from stable post-benchmark state ## 4:10 AM Auto-Save Checkpoint ### Status - Idle session continues without new tasks - No pending approvals or running sub-agents - Monitoring only; no implementation work since benchmark completion ## 11:17 AM Session Context Backup - Active work: this checkpoint/backup task only, no broader implementation currently in progress. - Waiting for approval: none in this session. - Sub-agents running: none known. - Recent durable context loaded before backup: 2026-04-14 and 2026-04-15 notes plus model-playbook/knowledge hub. - Most recent substantive work in",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.7857308140575942,
+      "maxScore": 0.7857308140575942,
+      "firstRecalledAt": "2026-05-06T16:06:33.460Z",
+      "lastRecalledAt": "2026-05-06T16:06:33.460Z",
+      "queryHashes": [
+        "e85bfea1ee80"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "backup",
+        "model-playbook.md",
+        "codex-modes.md",
+        "post-benchmark",
+        "auto-save",
+        "sub-agents",
+        "checkpoint/backup",
+        "model-playbook/knowledge"
+      ]
+    },
+    "memory:memory/2026-03-25.md:266:291": {
+      "key": "memory:memory/2026-03-25.md:266:291",
+      "path": "memory/2026-03-25.md",
+      "startLine": 266,
+      "endLine": 291,
+      "source": "memory",
+      "snippet": "## 14:17-14:28 - CATASTROPHIC WhatsApp Failure: 1-Minute Disconnect/Reconnect Loop - WhatsApp entered catastrophic failure mode: disconnecting every 60 seconds (status 499) - 22+ disconnect/reconnect cycles in 11 minutes (14:17-14:28) - Pattern: 60-second connected → disconnect → 4-5 second reconnect → repeat - Status 499 (client closed request) indicates severe network/connection instability ## 15:20-15:38 - Pattern Shifts to Status 503 (Service Unavailable) - 15:32:24: Disconnect (503) → reconnect (3 sec) - 15:36:10: Disconnect (503) → reconnect (5 sec) - 15:38:34: Disconnect (503) → reconnect (3 sec) - Status changed from 499 to 503, suggesting server-side issues ## 15:40 PM - Auto-sav",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8853532411864262,
+      "maxScore": 0.8853532411864262,
+      "firstRecalledAt": "2026-05-06T19:21:57.509Z",
+      "lastRecalledAt": "2026-05-06T19:21:57.509Z",
+      "queryHashes": [
+        "39ec8c9639bb"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "network",
+        "17-14",
+        "1-minute",
+        "disconnect/reconnect",
+        "60-second",
+        "4-5",
+        "network/connection",
+        "20-15"
+      ]
+    },
+    "memory:memory/2026-03-25.md:247:271": {
+      "key": "memory:memory/2026-03-25.md:247:271",
+      "path": "memory/2026-03-25.md",
+      "startLine": 247,
+      "endLine": 271,
+      "source": "memory",
+      "snippet": "- Latest WhatsApp event showed explicit disconnect (status 408) + 17min reconnect time - Database connectivity still needs recheck from 12:04 failure - No user responses to infrastructure alerts, no pending approvals, no sub-agents running ## 14:10 PM - WhatsApp Instability ESCALATES: Rapid Disconnect/Reconnect Cycle - 14:07:59: Disconnect (status 499) → 14:08:03: Connected (4 sec) - 14:09:03: Disconnect (status 499) → 14:09:07: Connected (4 sec) - Pattern SEVERELY deteriorated: rapid cycling within 2 minutes - Status 499 = client closed request - indicates connection instability - This represents events 15-16 in the chronic pattern, now with seconds-level instability ## 14:10 PM - Auto-s",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8811736402070199,
+      "maxScore": 0.8811736402070199,
+      "firstRecalledAt": "2026-05-06T19:21:57.509Z",
+      "lastRecalledAt": "2026-05-06T19:21:57.509Z",
+      "queryHashes": [
+        "39ec8c9639bb"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "sub-agents",
+        "disconnect/reconnect",
+        "15-16",
+        "seconds-level",
+        "auto-s",
+        "latest",
+        "whatsapp",
+        "event"
+      ]
+    },
+    "memory:memory/2026-02-16.md:32:58": {
+      "key": "memory:memory/2026-02-16.md:32:58",
+      "path": "memory/2026-02-16.md",
+      "startLine": 32,
+      "endLine": 58,
+      "source": "memory",
+      "snippet": "- 34 tables - 83 product groups (60 real + VACIO variants) - 1,221 products (with prices and IVA 16%) - 205 users/meseros (email: sr{id}@llorona.pos) - 2,988 shifts/turnos - **99,384 orders** (May 2017 → Feb 2026) with items + payments - 7 suppliers - 35 inventory items ### Key Schema Learnings (GrowthSuite constraints): - orders.status: lowercase enum {open, in_progress, printed, reopened, paid, closed, void, settled, refunded, partial_refund, sent} - shifts.status: UPPERCASE {OPEN, CLOSED} - order_items.status: lowercase {pending, fire, sent, prepared, cancelled} - payments.status: lowercase {pending, settled, void} - payments.kind: UPPERCASE {SALE, REFUND, TIP, TIP_REFUND} - tables.statu",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1.7608462882236402,
+      "maxScore": 0.8805056374660651,
+      "firstRecalledAt": "2026-05-06T19:21:57.509Z",
+      "lastRecalledAt": "2026-05-06T19:24:59.861Z",
+      "queryHashes": [
+        "39ec8c9639bb",
+        "d60f16039ea7"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "users/meseros",
+        "llorona.pos",
+        "shifts/turnos",
+        "orders.status",
+        "in-progress",
+        "partial-refund",
+        "shifts.status",
+        "order-items.status"
+      ]
+    },
+    "memory:memory/2026-02-27.md:24:48": {
+      "key": "memory:memory/2026-02-27.md:24:48",
+      "path": "memory/2026-02-27.md",
+      "startLine": 24,
+      "endLine": 48,
+      "source": "memory",
+      "snippet": "- **Root cause**: `CLOUD_PG_PASSWORD` env var missing from cron jobs - **Fix**: Added to all 3 cron jobs (fe1bf46f, e395c1ed, b7145c7a) - Cloud sync verified: 1,866 rows synced successfully ## r13 Mirror Missing Data Fix (evening) - **Bug**: r13 (La Llorona Demo 2) had ZERO shift_totals and ZERO shift_declarations — only orders and cash_movements were mirrored - **Fix**: Mirrored 1,863 shift_totals + 507 declarations from r5→r13 (local), then cloud synced (+2,370 rows to Railway) - **Cron updated**: 6AM job now mirrors shift_totals + declarations alongside cash_movements to r13 - User confirmed Corte X now shows FORMA DE PAGO and DECLARACION sections correctly ## Bot Reports Bug (identifie",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1.7346393658001105,
+      "maxScore": 0.8674111665016877,
+      "firstRecalledAt": "2026-05-06T19:21:57.509Z",
+      "lastRecalledAt": "2026-05-06T19:24:59.861Z",
+      "queryHashes": [
+        "39ec8c9639bb",
+        "d60f16039ea7"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "cloud-pg-password",
+        "shift-totals",
+        "shift-declarations",
+        "cash-movements",
+        "root",
+        "cause",
+        "env",
+        "var"
+      ]
+    },
+    "memory:memory/2026-03-25.md:125:151": {
+      "key": "memory:memory/2026-03-25.md:125:151",
+      "path": "memory/2026-03-25.md",
+      "startLine": 125,
+      "endLine": 151,
+      "source": "memory",
+      "snippet": "- Earlier stabilization window was temporary; instability pattern persists - Current status remained healthy during heartbeat: \"OK · linked · auth 3m ago\" - No intervention taken because gateway was connected and functioning at check time ## 09:10 AM - Auto-save Checkpoint - Current session: cron-event heartbeat monitoring - Active issue: recurring WhatsApp reconnects continue after restart - Total known incidents: 8 reconnection events since 04:00 - Actions already taken: user alerts + emergency gateway restart - No pending approvals, no active work beyond monitoring - No sub-agents running - Key resume context: restart did not fix issue; likely network/ISP level ## 09:40 AM - Auto-save C",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8634251223208125,
+      "maxScore": 0.8634251223208125,
+      "firstRecalledAt": "2026-05-06T19:21:57.509Z",
+      "lastRecalledAt": "2026-05-06T19:21:57.509Z",
+      "queryHashes": [
+        "39ec8c9639bb"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "gateway",
+        "network",
+        "auto-save",
+        "cron-event",
+        "sub-agents",
+        "network/isp",
+        "earlier",
+        "stabilization"
+      ]
+    },
+    "memory:memory/2026-03-25.md:227:252": {
+      "key": "memory:memory/2026-03-25.md:227:252",
+      "path": "memory/2026-03-25.md",
+      "startLine": 227,
+      "endLine": 252,
+      "source": "memory",
+      "snippet": "- Interval: 35 minutes (12:10→12:45), pattern remains consistent - Chronic instability continues: 13 events in 9 hours since 04:00 AM ## 13:10 PM - Auto-save Checkpoint - Current session: cron-event heartbeat monitoring - Active issues: (1) Chronic WhatsApp reconnections (13 events/9h), (2) GrowthSuite DB connection failure - Both issues persist with no user response to alerts sent - WhatsApp: predictable 15-105 minute intervals, functionally stable between reconnects - Database: connectivity failed at 12:04 check, needs recheck in next POS cycle - No pending approvals, no sub-agents running ## 13:40 PM - Fourteenth WhatsApp Disconnect/Reconnect & Auto-save - WhatsApp gateway disconnecte",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8630856316641826,
+      "maxScore": 0.8630856316641826,
+      "firstRecalledAt": "2026-05-06T19:21:57.509Z",
+      "lastRecalledAt": "2026-05-06T19:21:57.509Z",
+      "queryHashes": [
+        "39ec8c9639bb"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "gateway",
+        "auto-save",
+        "cron-event",
+        "events/9h",
+        "15-105",
+        "sub-agents",
+        "disconnect/reconnect",
+        "interval"
+      ]
+    },
+    "memory:memory/2026-03-21.md:1:41": {
+      "key": "memory:memory/2026-03-21.md:1:41",
+      "path": "memory/2026-03-21.md",
+      "startLine": 1,
+      "endLine": 41,
+      "source": "memory",
+      "snippet": "# 2026-03-21 Session Summary ## 04:23 AM - Heartbeat Check - **WhatsApp Status**: Multiple disconnects/reconnects overnight (status 408) - **WhatsApp Test**: ✅ Test message sent successfully, connection stable now - **Active Work**: None currently in progress - **Pending Tasks**: None waiting for approval - **Sub-agents**: None running - **System Health**: WhatsApp gateway operational after reconnection cycle ## Context for Resume - WhatsApp experienced connectivity issues overnight but is now stable - No active development work or pending user requests - Routine heartbeat monitoring continuing as configured --- ## 1:37 PM Auto-Save Checkpoint ### WhatsApp Gateway Status Update - **Patt",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8520721785403804,
+      "maxScore": 0.8520721785403804,
+      "firstRecalledAt": "2026-05-06T19:21:57.509Z",
+      "lastRecalledAt": "2026-05-06T19:21:57.509Z",
+      "queryHashes": [
+        "39ec8c9639bb"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "gateway",
+        "disconnects/reconnects",
+        "sub-agents",
+        "auto-save",
+        "summary",
+        "heartbeat",
+        "check",
+        "whatsapp"
+      ]
+    },
+    "memory:memory/2026-04-18.md:8:12": {
+      "key": "memory:memory/2026-04-18.md:8:12",
+      "path": "memory/2026-04-18.md",
+      "startLine": 8,
+      "endLine": 12,
+      "source": "memory",
+      "snippet": "- Category D (Marketing), restaurant 40 Fogo de Chão: technical 10/10 HTTP 200, quality 6 pass / 4 fail, average 82.6/100. Best answers were happy hour, social media, and delivery without Uber Eats. Weak points were food-cost intent failure, trends-2026 generic reprompting, and overlong WhatsApp formatting with raw sources. - Category E (Recursos Humanos): technical 10/10 HTTP 200, quality 5 pass / 5 fail, average 66/100. Biggest misses were salary question routed to sales report, vague contingency answer for absent waiter, and failure to give safe general labor-guidance with legal/accounting caveat. - Category F (RAG / contexto del restaurante), r40 Fogo de Chão: 30 pass / 20 fail, av",
+      "recallCount": 3,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 2.671832466414135,
+      "maxScore": 0.8906108221380451,
+      "firstRecalledAt": "2026-05-06T19:24:14.523Z",
+      "lastRecalledAt": "2026-05-06T19:43:19.584Z",
+      "queryHashes": [
+        "4ce2c4f69865",
+        "d60f16039ea7",
+        "e515d81b9807"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "10/10",
+        "82.6/100",
+        "food-cost",
+        "trends-2026",
+        "66/100",
+        "labor-guidance",
+        "legal/accounting",
+        "category"
+      ]
+    },
+    "memory:memory/2026-05-04.md:28:34": {
+      "key": "memory:memory/2026-05-04.md:28:34",
+      "path": "memory/2026-05-04.md",
+      "startLine": 28,
+      "endLine": 34,
+      "source": "memory",
+      "snippet": "[2026-05-04 20:01 America/Mexico_City] Session `oceanic-` completed successfully (code 0). Visible excerpt: maintenance rotated out 1 order, then replacement creation failed on foreign key constraint `order_items_route_area_id_foreign`; 0 orders created before truncation. No user-facing relay sent. [2026-05-04 20:32 America/Mexico_City] Async exec completion handled internally. [2026-05-04 20:32 America/Mexico_City] Session `young-tr` completed successfully (code 0). Visible excerpt showed open-accounts/alertas bot evaluation results, including `M09` routed to `fallback:action` with reply \"No pude procesar tu consulta. Intenta reformularla.\" No user-facing relay sent. [2026-05-04 20:32 Ameri",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8766485143578044,
+      "maxScore": 0.8766485143578044,
+      "firstRecalledAt": "2026-05-06T19:24:14.523Z",
+      "lastRecalledAt": "2026-05-06T19:24:14.523Z",
+      "queryHashes": [
+        "4ce2c4f69865"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "america/mexico-city",
+        "user-facing",
+        "young-tr",
+        "open-accounts/alertas",
+        "america",
+        "mexico-city",
+        "oceanic",
+        "completed"
+      ]
+    },
+    "memory:memory/2026-03-30.md:1:12": {
+      "key": "memory:memory/2026-03-30.md:1:12",
+      "path": "memory/2026-03-30.md",
+      "startLine": 1,
+      "endLine": 12,
+      "source": "memory",
+      "snippet": "# 2026-03-30 - Daily Log ## 04:52 - Heartbeat Health Checks - ✅ **WhatsApp**: Test message sent successfully - ✅ **POS Backends**: All 9 services healthy (HTTP 200) - pos-auth-api, pos-order-api, pos-cash-api, pos-bot-api - pos-inventory-api-bba3, pos-centro-control-api - posreservacionesapi, poswebsiteapi, impulsobotwhats - ✅ **PostgreSQL**: Connected successfully, 325 orders in last 24h - ⏳ **Frontend check**: Due (last done TBD) All critical systems operational.",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8749629813441105,
+      "maxScore": 0.8749629813441105,
+      "firstRecalledAt": "2026-05-06T19:24:14.523Z",
+      "lastRecalledAt": "2026-05-06T19:24:14.523Z",
+      "queryHashes": [
+        "4ce2c4f69865"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "pos-auth-api",
+        "pos-order-api",
+        "pos-cash-api",
+        "pos-bot-api",
+        "pos-inventory-api-bba3",
+        "pos-centro-control-api",
+        "log",
+        "heartbeat"
+      ]
+    },
+    "memory:memory/2026-02-22.md:159:171": {
+      "key": "memory:memory/2026-02-22.md:159:171",
+      "path": "memory/2026-02-22.md",
+      "startLine": 159,
+      "endLine": 171,
+      "source": "memory",
+      "snippet": "## Noma Style Clone for Café de Tacuba - User chose noma.dk as reference for Café de Tacuba's website - Screenshot captured, full analysis done with clone-style v2 skill - Extracted config: primary #1B1B2F (azul-negro), secondary #D4C5A9 (beige champagne), tertiary #FAFAF7 (blanco cálido) - Fonts: Cormorant Garamond (headings) + Inter (body) - Theme: elegante, spacing airy, borderRadius none, animation minimal, colorMode mixed - Components: fullscreen-image hero, minimal nav, list menu, grid gallery, header-fixed CTA, light footer - Score: 9/10 on luxury signals - Awaiting user approval + answers to: 1. Professional photos of Café de Tacuba (current ones are La Llorona's from S3) 2. Abou",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1.74755750071095,
+      "maxScore": 0.8884654459448366,
+      "firstRecalledAt": "2026-05-06T19:24:14.523Z",
+      "lastRecalledAt": "2026-05-06T19:43:19.584Z",
+      "queryHashes": [
+        "4ce2c4f69865",
+        "e515d81b9807"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "noma.dk",
+        "clone-style",
+        "azul-negro",
+        "fullscreen-image",
+        "header-fixed",
+        "9/10",
+        "noma",
+        "style"
+      ]
+    },
+    "memory:memory/2026-04-06.md:16:38": {
+      "key": "memory:memory/2026-04-06.md:16:38",
+      "path": "memory/2026-04-06.md",
+      "startLine": 16,
+      "endLine": 38,
+      "source": "memory",
+      "snippet": "- **TOOLS.md is NOT synced** (contains prod credentials) — stays local only - Cron sync job: auto-commits + pushes every 2h using Codex 5.4, with secret scan pre-check that aborts if credentials detected - Other compu setup: `git clone https://github.com/hectoremilio1000/openclaw-workspace.git ~/.openclaw/workspace` + pull cron ## Workspace inventory (what's portable) Skills: screenshot, obsidian-1-0-0, deploy-verify, pos-bot-test-plan, softrestaurant-sync, model-benchmark Root configs: AGENTS.md, SOUL.md, USER.md, HEARTBEAT.md, IDENTITY.md (TOOLS.md stays local) Memory: model-playbook.md, codex-modes.md, codex-coaching-log.md, claude-code-knowledge.md, model-comparisons.md ## Fogo de Chão",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8548816979039677,
+      "maxScore": 0.8548816979039677,
+      "firstRecalledAt": "2026-05-06T19:24:59.861Z",
+      "lastRecalledAt": "2026-05-06T19:24:59.861Z",
+      "queryHashes": [
+        "d60f16039ea7"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "tools.md",
+        "auto-commits",
+        "5.4",
+        "pre-check",
+        "openclaw/workspace",
+        "obsidian-1-0-0",
+        "deploy-verify",
+        "pos-bot-test-plan"
+      ]
+    },
+    "memory:memory/2026-04-18.md:1:8": {
+      "key": "memory:memory/2026-04-18.md:1:8",
+      "path": "memory/2026-04-18.md",
+      "startLine": 1,
+      "endLine": 8,
+      "source": "memory",
+      "snippet": "# 2026-04-18 - Heartbeat ops rule remained strict all day: read only `/Users/hectorvelasquez/.openclaw/workspace/HEARTBEAT.md`, do not infer old tasks, and reply `HEARTBEAT_OK` when nothing needs attention. - GrowthSuite POS health checks reported healthy production status multiple times today: all 9 Railway backends returned HTTP 200, PostgreSQL connected successfully, and sample order-count checks returned 100, then 92, then 95 orders in the last 24 hours. - WhatsApp gateway showed repeated brief disconnect/reconnect events during the day, commonly `status 499` and once `408`, but recovered and reconnected as `+5215521293811` each time in the visible logs. - POS bot test rotation advanced",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8520650101685168,
+      "maxScore": 0.8520650101685168,
+      "firstRecalledAt": "2026-05-06T19:24:59.861Z",
+      "lastRecalledAt": "2026-05-06T19:24:59.861Z",
+      "queryHashes": [
+        "d60f16039ea7"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "gateway",
+        "users/hectorvelasquez",
+        "openclaw/workspace/heartbeat.md",
+        "heartbeat-ok",
+        "order-count",
+        "disconnect/reconnect",
+        "heartbeat",
+        "ops"
+      ]
+    },
+    "memory:memory/2026-05-06.md:38:43": {
+      "key": "memory:memory/2026-05-06.md:38:43",
+      "path": "memory/2026-05-06.md",
+      "startLine": 38,
+      "endLine": 43,
+      "source": "memory",
+      "snippet": "[2026-05-06 13:01 America/Mexico_City] Async exec completion handled internally. [2026-05-06 13:01 America/Mexico_City] Session `tender-v` completed successfully (code 0). Visible excerpt: window LUNCH, business date 2026-05-06, restaurant r40, safety 2/500 orders today, shift NO_SHIFT, coverage 0o/0p before truncation. No user-facing relay sent. [2026-05-06 13:01 America/Mexico_City] Session `calm-cov` completed successfully (code 0). Visible excerpt showed foreign key violation on order_items_route_area_id_foreign during insert/update on order_items; summary showed 0 orders created, $0.00 revenue, generated 0 coverage before truncation. No user-facing relay sent. [2026-05-06 00:32 America/",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.839843477843668,
+      "maxScore": 0.839843477843668,
+      "firstRecalledAt": "2026-05-06T19:24:59.861Z",
+      "lastRecalledAt": "2026-05-06T19:24:59.861Z",
+      "queryHashes": [
+        "d60f16039ea7"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "america/mexico-city",
+        "tender-v",
+        "2/500",
+        "no-shift",
+        "0o/0p",
+        "user-facing",
+        "calm-cov",
+        "insert/update"
+      ]
+    },
+    "memory:memory/2026-03-29.md:1:43": {
+      "key": "memory:memory/2026-03-29.md:1:43",
+      "path": "memory/2026-03-29.md",
+      "startLine": 1,
+      "endLine": 43,
+      "source": "memory",
+      "snippet": "# 2026-03-29 ## Evening Heartbeat (20:42) ### ✅ WhatsApp Status - Channel: OK (linked, +5215521293811, auth 2m ago) - Gateway: Running (pid 92961) - No direct test message sent (will monitor naturally) ### ✅ GrowthSuite POS Health Check All backend health endpoints: ✅ 200 OK - pos-auth-api-production.up.railway.app/health - pos-order-api-production.up.railway.app/health - pos-cash-api-production.up.railway.app/api/health - pos-bot-api-production.up.railway.app/ - pos-inventory-api-production-bba3.up.railway.app/api/measurement-units - pos-centro-control-api-production.up.railway.app/api/plans - posreservacionesapi-production.up.railway.app/health - poswebsiteapi-production.up.railway.a",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8302012222274577,
+      "maxScore": 0.8302012222274577,
+      "firstRecalledAt": "2026-05-06T19:24:59.861Z",
+      "lastRecalledAt": "2026-05-06T19:24:59.861Z",
+      "queryHashes": [
+        "d60f16039ea7"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "gateway",
+        "evening",
+        "heartbeat",
+        "whatsapp",
+        "status",
+        "channel",
+        "linked",
+        "auth"
+      ]
+    },
+    "memory:memory/2026-04-06.md:1:20": {
+      "key": "memory:memory/2026-04-06.md:1:20",
+      "path": "memory/2026-04-06.md",
+      "startLine": 1,
+      "endLine": 20,
+      "source": "memory",
+      "snippet": "# 2026-04-06 — Memory Flush ## Cost optimization (Claude usage was at $44.13 / 18%) Root cause: main session running in Opus 24/7 + auto-save checkpoints every 30min passing through main session (Opus) + benchmark rounds. Migrated everything automated to Codex 5.4: - **Session Context Backup** → Codex 5.4 **isolated session** (no longer traverses main Opus session, 60s timeout) - **Eliminated duplicate** \"Claude Usage Report (4h)\" cron - **Bot Test Smoke** → Codex 5.4 (had been missed) - All cron jobs now on Codex 5.4; Opus ONLY used when user explicitly picks it in main session - Standing rule: Claude/Opus never runs automated workloads ## GitHub workspace sync repo - Created private repo",
+      "recallCount": 2,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 1.7210601172261721,
+      "maxScore": 0.8918964306873425,
+      "firstRecalledAt": "2026-05-06T19:24:59.861Z",
+      "lastRecalledAt": "2026-05-06T19:43:19.584Z",
+      "queryHashes": [
+        "d60f16039ea7",
+        "e515d81b9807"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "backup",
+        "44.13",
+        "24/7",
+        "auto-save",
+        "5.4",
+        "claude/opus",
+        "flush",
+        "cost"
+      ]
+    },
+    "memory:memory/2026-04-15.md:1:10": {
+      "key": "memory:memory/2026-04-15.md:1:10",
+      "path": "memory/2026-04-15.md",
+      "startLine": 1,
+      "endLine": 10,
+      "source": "memory",
+      "snippet": "## 2026-04-15 - Creé el skill `skills/computer-use-image-paste/` con `SKILL.md` y `references/acceptance-checklist.md` para sesiones con computer-use/clipboard real. El skill deja explícito que si la sesión no tiene computer-use no se debe fingir una prueba física. - Implementé en el repo local de OpenClaw (`/Users/hectorvelasquez/proyectos/openclaw/openclaw`) soporte en el TUI para convertir paths locales pegados de imágenes en attachments reales antes de `chat.send`, en vez de depender de rescate posterior por path. - Archivos clave del cambio TUI: `src/tui/tui-image-paste.ts`, `src/tui/tui-image-paste.test.ts`, y actualizaciones relacionadas en el flujo de envío/UI/documentación para mos",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.9029865512821609,
+      "maxScore": 0.9029865512821609,
+      "firstRecalledAt": "2026-05-06T19:43:19.584Z",
+      "lastRecalledAt": "2026-05-06T19:43:19.584Z",
+      "queryHashes": [
+        "e515d81b9807"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "skills/computer-use-image-paste",
+        "skill.md",
+        "computer-use/clipboard",
+        "computer-use",
+        "chat.send",
+        "src/tui/tui-image-paste.ts",
+        "src/tui/tui-image-paste.test.ts",
+        "envío/ui/documentación"
+      ]
+    },
+    "memory:memory/2026-02-22.md:89:113": {
+      "key": "memory:memory/2026-02-22.md:89:113",
+      "path": "memory/2026-02-22.md",
+      "startLine": 89,
+      "endLine": 113,
+      "source": "memory",
+      "snippet": "- Implemented template_builder.ts: copies template → generates site.config.json → npm install → generated_sites/{slug}/ - Added POST /api/websites/:id/generate endpoint - Updated WebsiteWizard.tsx: create → POST /websites + POST /websites/:id/generate - Added generated_path column to website_configs ### Auth/JWT Issues (Centro de Control → Website API) - Website API JWT middleware expected JWT with iss='pos-auth' and aud='pos-website-api' - Frontend sends opaque admin_session_token, not access_jwt - Fixed: JWT middleware now falls back to validating opaque token via auth API's /api/me - .env alignment: - AUTH_JWT_SECRET=12345678908736 (same across auth, website, reservation APIs) - AUTH",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8875696119467595,
+      "maxScore": 0.8875696119467595,
+      "firstRecalledAt": "2026-05-06T19:43:19.584Z",
+      "lastRecalledAt": "2026-05-06T19:43:19.584Z",
+      "queryHashes": [
+        "e515d81b9807"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "template-builder.ts",
+        "site.config.json",
+        "generated-sites",
+        "api/websites",
+        "id/generate",
+        "websitewizard.tsx",
+        "generated-path",
+        "website-configs"
+      ]
+    },
+    "memory:memory/2026-02-22.md:109:142": {
+      "key": "memory:memory/2026-02-22.md:109:142",
+      "path": "memory/2026-02-22.md",
+      "startLine": 109,
+      "endLine": 142,
+      "source": "memory",
+      "snippet": "- Files: SKILL.md, clone-style.md, premium-patterns.md, examples.md - Extracts design tokens + composition rules (not just colors): - Color system (3 colors) - Typography (heading + body + optional display) - Design tokens: spacing density, border radius, text transform, letter spacing, animation philosophy, image treatment, color mode - Component patterns: hero, nav, menu, gallery, CTA, footer - 5 Luxury Signals scored 0-10: hero fuerte, CTA reservación, menú experiencia, info esencial, storytelling - 11 curated reference sites pre-loaded (Noma, Pujol, EMP, Quintonil, etc.) - Never auto-applies — always presents for admin approval ### Port Map (updated) - pos_auth_api: 3340 - pos",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8799554812456782,
+      "maxScore": 0.8799554812456782,
+      "firstRecalledAt": "2026-05-06T19:43:19.584Z",
+      "lastRecalledAt": "2026-05-06T19:43:19.584Z",
+      "queryHashes": [
+        "e515d81b9807"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "skill.md",
+        "clone-style.md",
+        "premium-patterns.md",
+        "examples.md",
+        "0-10",
+        "pre-loaded",
+        "auto-applies",
+        "pos-auth-api"
+      ]
+    },
+    "memory:memory/2026-02-22.md:136:163": {
+      "key": "memory:memory/2026-02-22.md:136:163",
+      "path": "memory/2026-02-22.md",
+      "startLine": 136,
+      "endLine": 163,
+      "source": "memory",
+      "snippet": "- Initialized state: last_folio=102404 (where Demo2 was frozen since Feb 17) - Ran --sync: 303 new orders, 3 shifts synced (folios 102405→102712) - Both Llorona(5) and Demo2(13) now: 99,738 orders, 2,992 shifts, max folio 102,712 ### Cloud sync: Local → Railway - Cloud was behind since Feb 17 - Used cloud_sync_v3.py (handles camelCase columns properly, unlike cloud_sync_fast.py) - La Llorona (5): synced +166 orders, +1,766 items, +285 payments (45s) - Demo2 (13): synced +3 shifts, +303 orders, +2,937 items, +514 payments - Final cloud state: both at folio 102,712, within 1-2 orders of local (acceptable) ### Pending - Demo2 sync NOT in daily cron yet — user wants Option A (auto sync Llorona",
+      "recallCount": 1,
+      "dailyCount": 0,
+      "groundedCount": 0,
+      "totalScore": 0.8794968121543251,
+      "maxScore": 0.8794968121543251,
+      "firstRecalledAt": "2026-05-06T19:43:19.584Z",
+      "lastRecalledAt": "2026-05-06T19:43:19.584Z",
+      "queryHashes": [
+        "e515d81b9807"
+      ],
+      "recallDays": [
+        "2026-05-06"
+      ],
+      "conceptTags": [
+        "last-folio",
+        "cloud-sync-v3.py",
+        "cloud-sync-fast.py",
+        "1-2",
+        "initialized",
+        "state",
+        "where",
+        "demo2"
       ]
     }
   }

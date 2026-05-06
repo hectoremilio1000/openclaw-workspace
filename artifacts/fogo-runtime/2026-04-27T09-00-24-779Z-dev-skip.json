@@ -1,0 +1,25 @@
+{
+  "type": "skip",
+  "envProfile": "dev",
+  "businessDate": "2026-04-26",
+  "serviceWindow": "CLOSE",
+  "restaurantId": 9,
+  "timestamp": "2026-04-27T09:00:24.779Z",
+  "shiftStatus": "none",
+  "plan": [
+    "SKIP"
+  ],
+  "metrics": {
+    "orders": 0,
+    "revenue": 0,
+    "checkIns": 0,
+    "checkOuts": 0,
+    "errors": []
+  },
+  "coverage": {
+    "open": 0,
+    "printed": 0
+  },
+  "coverageOk": true,
+  "issues": []
+}

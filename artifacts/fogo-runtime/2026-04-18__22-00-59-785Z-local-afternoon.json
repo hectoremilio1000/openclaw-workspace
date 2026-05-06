@@ -1,0 +1,144 @@
+{
+  "status": "ok",
+  "envLabel": "LOCAL",
+  "envProfile": "local",
+  "phase": "afternoon",
+  "restaurantId": 40,
+  "startedAt": "2026-04-18T22:00:59.513Z",
+  "finishedAt": "2026-04-18T22:00:59.785Z",
+  "plan": {
+    "phase": "afternoon",
+    "scenario": "midday_reset",
+    "serviceProfile": "slow_recovery",
+    "expectedCovers": 18,
+    "expectedSalesRange": [
+      20000,
+      55000
+    ],
+    "expectedOrdersRange": [
+      6,
+      11
+    ],
+    "attendanceIncidents": [
+      "early_checkout"
+    ],
+    "inventoryPressure": [
+      "salad_bar",
+      "desserts"
+    ],
+    "operationalRisks": [
+      "open_orders_stale",
+      "staff_gap"
+    ],
+    "restaurantId": 40,
+    "envProfile": "local",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-18T22:00:59.513Z"
+  },
+  "verification": {
+    "ok": false,
+    "businessDate": "2026-04-18",
+    "envProfile": "local",
+    "phase": "afternoon",
+    "runConsistency": {
+      "ok": false,
+      "summary": {
+        "orders": 14,
+        "revenue": 70180,
+        "checkIns": 0,
+        "checkOuts": 19,
+        "shiftsOpened": 0,
+        "shiftsClosed": 0,
+        "inventoryPurchases": 0,
+        "inventoryConsumptions": 6,
+        "inventoryWaste": 0
+      },
+      "issues": [
+        "run has more check-outs (19) than check-ins (0)"
+      ],
+      "warnings": [
+        "run revenue 70180.00 is above expected max 55000",
+        "run orders 14 are above expected max 11"
+      ]
+    },
+    "dayHealth": {
+      "ok": true,
+      "summary": {
+        "openShiftCount": 1,
+        "checkIns": 19,
+        "checkOuts": 19,
+        "orders": 50,
+        "revenue": 284897.6,
+        "openOrders": 1,
+        "negativeInventoryItems": 12
+      },
+      "issues": [],
+      "warnings": [
+        "12 inventory items have negative cumulative balance"
+      ]
+    },
+    "issues": [
+      "run has more check-outs (19) than check-ins (0)"
+    ],
+    "warnings": [
+      "run revenue 70180.00 is above expected max 55000",
+      "run orders 14 are above expected max 11",
+      "12 inventory items have negative cumulative balance"
+    ]
+  },
+  "totals": {
+    "orders": 14,
+    "revenue": 70180,
+    "schedules": 0,
+    "attendanceEvents": 19,
+    "checkIns": 0,
+    "checkOuts": 19,
+    "shiftsOpened": 0,
+    "shiftsClosed": 0,
+    "payments": 20,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 6,
+    "inventoryWaste": 0
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 18,
+      "expectedSalesMin": 20000,
+      "expectedSalesMax": 55000
+    },
+    {
+      "name": "afternoon",
+      "orders": 14,
+      "revenue": 70180.00000000001,
+      "payments": 20,
+      "schedules": 0,
+      "attendanceEvents": 19,
+      "checkIns": 0,
+      "checkOuts": 19,
+      "lateCheckIns": 0,
+      "shiftsOpened": 0,
+      "shiftsClosed": 0
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 0,
+      "inventoryConsumptions": 6,
+      "inventoryWaste": 0,
+      "skipped": false
+    },
+    {
+      "name": "reservations",
+      "reservations": 0
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": false,
+      "runIssueCount": 1,
+      "runWarningCount": 2,
+      "dayIssueCount": 0,
+      "dayWarningCount": 1
+    }
+  ],
+  "error": null
+}

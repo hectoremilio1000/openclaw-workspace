@@ -1,0 +1,131 @@
+{
+  "status": "ok",
+  "envLabel": "DEV",
+  "envProfile": "dev",
+  "phase": "close",
+  "restaurantId": 9,
+  "startedAt": "2026-04-15T04:00:58.162Z",
+  "finishedAt": "2026-04-15T04:01:37.502Z",
+  "plan": {
+    "phase": "close",
+    "scenario": "day_closeout",
+    "serviceProfile": "settlement_and_close",
+    "expectedCovers": 14,
+    "expectedSalesRange": [
+      8000,
+      35000
+    ],
+    "expectedOrdersRange": [
+      5,
+      8
+    ],
+    "attendanceIncidents": [
+      "early_checkout"
+    ],
+    "inventoryPressure": [
+      "waste_review",
+      "replenishment_candidates"
+    ],
+    "operationalRisks": [
+      "open_orders_at_close",
+      "cash_difference"
+    ],
+    "restaurantId": 9,
+    "envProfile": "dev",
+    "forcedPhase": false,
+    "generatedAt": "2026-04-15T04:00:58.162Z"
+  },
+  "verification": {
+    "ok": false,
+    "businessDate": "2026-04-14",
+    "envProfile": "dev",
+    "phase": "close",
+    "runConsistency": {
+      "ok": true,
+      "summary": {
+        "orders": 6,
+        "revenue": 17568.2,
+        "checkIns": 0,
+        "checkOuts": 13,
+        "shiftsOpened": 0,
+        "shiftsClosed": 1,
+        "inventoryPurchases": 0,
+        "inventoryConsumptions": 8,
+        "inventoryWaste": 1
+      },
+      "issues": [],
+      "warnings": []
+    },
+    "dayHealth": {
+      "ok": false,
+      "summary": {
+        "openShiftCount": 0,
+        "checkIns": 27,
+        "checkOuts": 13,
+        "orders": 266,
+        "revenue": 1597723.45,
+        "openOrders": 0,
+        "negativeInventoryItems": 20
+      },
+      "issues": [
+        "4 open-order records attached to closed shifts"
+      ],
+      "warnings": [
+        "20 inventory items have negative cumulative balance"
+      ]
+    },
+    "issues": [
+      "4 open-order records attached to closed shifts"
+    ],
+    "warnings": [
+      "20 inventory items have negative cumulative balance"
+    ]
+  },
+  "totals": {
+    "orders": 6,
+    "revenue": 17568.2,
+    "schedules": 0,
+    "attendanceEvents": 13,
+    "checkIns": 0,
+    "checkOuts": 13,
+    "shiftsOpened": 0,
+    "shiftsClosed": 1,
+    "payments": 6,
+    "inventoryPurchases": 0,
+    "inventoryConsumptions": 8,
+    "inventoryWaste": 1
+  },
+  "steps": [
+    {
+      "name": "scenario-plan",
+      "expectedCovers": 14,
+      "expectedSalesMin": 8000,
+      "expectedSalesMax": 35000
+    },
+    {
+      "name": "close",
+      "attendanceEvents": 13,
+      "checkOuts": 13,
+      "shiftsClosed": 1,
+      "orders": 6,
+      "revenue": 17568.2,
+      "payments": 6
+    },
+    {
+      "name": "inventory",
+      "inventoryPurchases": 0,
+      "inventoryConsumptions": 8,
+      "inventoryWaste": 1,
+      "skipped": false
+    },
+    {
+      "name": "consistency-verifier",
+      "ok": false,
+      "runIssueCount": 0,
+      "runWarningCount": 0,
+      "dayIssueCount": 1,
+      "dayWarningCount": 1
+    }
+  ],
+  "error": null
+}
