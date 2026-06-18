@@ -1,0 +1,26 @@
+[
+  {
+    "turno": "6254",
+    "shift_id": 139867,
+    "cash_session_id": 105216,
+    "orders": 49,
+    "items": 575,
+    "payments": 83,
+    "movements": 9,
+    "declarations": 1,
+    "expected_cash": -10.07,
+    "closing_cash": 0
+  },
+  {
+    "turno": "6255",
+    "shift_id": 139868,
+    "cash_session_id": 105217,
+    "orders": 46,
+    "items": 382,
+    "payments": 82,
+    "movements": 6,
+    "declarations": 2,
+    "expected_cash": 1128.78,
+    "closing_cash": 1132.0
+  }
+]
